@@ -1,5 +1,5 @@
 # Contracts
-A Foundry repo for easy testing and integrations with Hashes DAO smart contracts
+A [Foundry](https://book.getfoundry.sh/) repo for easy testing and integrations with Hashes DAO smart contracts
 
 ## Notes
 - Built with Openzeppelin v4.9.0
