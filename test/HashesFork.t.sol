@@ -113,4 +113,62 @@ contract HashesFork is Test {
 
         vm.stopPrank();
     }
+
+    function testWithdrawRETHFromDAO() public {
+        vm.startPrank(hashesDeployer);
+
+        /// Send the DAO some RocketPool ETH
+
+        ERC20 RETH = ERC20(payable(0xae78736Cd615f374D3085123A210448E74Fc6393));
+        uint256 rethAmount = 10e18;
+
+        deal(address(RETH), address(hashesDAO), rethAmount);
+
+        uint256 hashesDeployerBalanceBefore = RETH.balanceOf(hashesDeployer);
+
+        /// Create Proposal
+        address[] memory targets = new address[](1);
+        targets[0] = address(RETH);
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 0;
+
+        string[] memory signatures = new string[](1);
+        signatures[0] = 'transfer(address,uint256)';
+
+        bytes[] memory callData = new bytes[](1);
+        callData[0] = abi.encodePacked([hashesDeployer], [rethAmount]);
+
+        hashesDAO.propose(
+            targets,
+            amounts,
+            signatures,
+            callData,
+            'Withdraw WETH Test'
+        );
+
+        vm.roll(block.number + 2);
+
+        /// Vote
+        uint128 proposalId = hashesDAO.getProposalCount();
+
+        hashesDAO.castVote(proposalId, true, false, '0x');
+
+        vm.roll(block.number + 17820);
+
+        /// Queue
+        hashesDAO.queue(proposalId);
+
+        vm.warp(block.timestamp + 3 days);
+
+        /// Execute
+        hashesDAO.execute(proposalId);
+
+        uint256 hashesDeployerBalanceAfter = RETH.balanceOf(hashesDeployer);
+
+        /// Checks
+        assertEq(hashesDeployerBalanceAfter, hashesDeployerBalanceBefore + rethAmount);
+
+        vm.stopPrank();
+    }
 }
