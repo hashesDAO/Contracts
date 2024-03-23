@@ -1,13 +1,15 @@
 [profile.default]
 solc-version = "0.8.6"
 libs = ['lib']
-optimizer = true
+optimizer = false
+via_ir = false
 optimizer_runs = 420_000
 fuzz_max_global_rejects = 420_000
 
 gas_reports = [
     "Hashes",
-    "HashesDAO" 
+    "HashesDAO",
+    "Redemption"
 ]
 
 remappings = [

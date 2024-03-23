@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-/// NOTE This is a template test contract that can be used to fork Ethereum Mainnet and test integrations 
+/// NOTE This is a template/example test contract that can be used to fork Ethereum Mainnet and test integrations 
 /// with the already deployed Hashes DAO smart contracts.
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
