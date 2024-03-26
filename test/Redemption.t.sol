@@ -40,8 +40,9 @@ contract RedemptionTests is Test {
         daoWallet = address(0x391b4A553551606Bbd1CDee08A0fA31f8548F3DC);
 
         /// Award the redemption multisig a DAO hash to expedite stage jumps
-        vm.startPrank(hashHolder0);
-        hashes.transferFrom(hashHolder0, address(redemptionMultisig), 706);
+        vm.startPrank(hashHolder1);
+        hashes.transferFrom(hashHolder1, address(redemptionMultisig), 301);
+        hashes.transferFrom(hashHolder1, hashHolder0, 870);
         vm.stopPrank();
 
         /// Award DAOHashHolder0 a DexLabs, deactivated, and DAOWallet hash
@@ -62,20 +63,18 @@ contract RedemptionTests is Test {
     function testInitialisation() public {
         assertEq(address(redemption.WETH()), address(wETH));
         assertEq(address(redemption.HASHES()), address(hashes));
-        assertEq(redemption.MINDEPOSITAMOUNT(), 100);
+        assertEq(redemption.MINDEPOSITAMOUNT(), 420);
         assertEq(redemption.MINPOSTREDEMPTIONAMOUNT(), 1);
         assertEq(redemption.MINREDEMPTIONTIME(), 180 days);
         assertEq(redemption.INITIALNUMBEROFELIGIBLEHASHES(), 818);
         assertEq(redemption.owner(), redemptionMultisig);
     }
 
-    /// PREREDEMPTION ///
-
-    /// @dev Tests PreRedemption Stage fail conditions - make redundant
-    function testExternalPreRedemptionFailConditions() public prank(hashHolder0) {
-
-        vm.expectRevert("Redemption: Must be in post-redemption stage");
-        redemption.postRedeem();
+    /// @dev Tests the receive function to revert
+    function testReceiveRevert() public {
+        vm.expectRevert();
+        (bool s,) = address(redemption).call{value: 1 ether}("");
+        s;
     }
 
     /// REDEMPTION ///
@@ -130,7 +129,10 @@ contract RedemptionTests is Test {
         redemption.redeem(set);
 
         /// Redeem an already redeemed Hash
-
+        set[1] = 883;
+        redemption.redeem(set);
+        vm.expectRevert("ERC721: transfer of token that is not own");
+        redemption.redeem(set);
 
         vm.stopPrank();
 
@@ -140,30 +142,165 @@ contract RedemptionTests is Test {
         vm.stopPrank();
 
         vm.startPrank(hashHolder0);
-        //vm.expectRevert("Redemption: asdas");
-        //redemption.
+        set[0] = 870;
+        set[1] = 706;
+
+        vm.expectRevert("Redemption: Must be in redemption stage");
+        redemption.redeem(set);
         vm.stopPrank();
     }
 
-    /// @dev Tests the Redeem function sucess conditions
+    /// @dev Tests the Redeem function success conditions
     function testRedeemSuccess(uint256 _amount) public {
+        /// Set redemption stage
         vm.startPrank(redemptionMultisig);
         _setRedemptionStage(_amount);
         vm.stopPrank();
 
+        /// Two users redeem their hashses
+        uint256 redemptionBalaceBefore = wETH.balanceOf(address(redemption));
+        uint256 hashHolder0BalanceBefore = wETH.balanceOf(hashHolder0);
+        uint256 hashHolder1BalanceBefore = wETH.balanceOf(hashHolder1);
+
         vm.startPrank(hashHolder0);
-        
-        /// success
+        uint256[] memory set0 = new uint256[](2);
+        set0[0] = 241;
+        set0[1] = 883;
+
+        hashes.setApprovalForAll(address(redemption), true);
+        redemption.redeem(set0);
+
+        vm.stopPrank();
+        vm.startPrank(hashHolder1);
+
+        uint256[] memory set1 = new uint256[](8);
+        set1[0] = 964;
+        set1[1] = 405;
+        set1[2] = 672;
+        set1[3] = 382;
+        set1[4] = 580;
+        set1[5] = 497;
+        set1[6] = 257;
+        set1[7] = 448;
+
+        hashes.setApprovalForAll(address(redemption), true);
+        redemption.redeem(set1);
+
+        /// Test correct transfer of assets
+        uint256 redemptionPerHash = redemption.redemptionPerHash();
+        assertGt(redemptionPerHash, 0);
+
+        assertEq(redemption.totalNumberRedeemed(), hashes.balanceOf(address(redemption)));
+        assertEq(redemption.totalNumberRedeemed(), redemption.amountRedeemed(hashHolder0) + redemption.amountRedeemed(hashHolder1));
+        assertEq(redemption.totalNumberRedeemed(), 10);
+        assertEq(redemptionBalaceBefore, wETH.balanceOf(address(redemption)) + (redemptionPerHash * 10));
+        assertEq(hashHolder0BalanceBefore, wETH.balanceOf(hashHolder0) - (redemptionPerHash * 2));
+        assertEq(hashHolder1BalanceBefore, wETH.balanceOf(hashHolder1) - (redemptionPerHash * 8));
 
         vm.stopPrank();
     }
 
-    /// a successful redeem
-
     /// POSTREDEMPTION ///
 
-    function testPostRedeem() public {
+    /// @dev Tests the PostRedeem function revert conditions
+    function testPostRedeemRevertConditions(uint256 _amount) public {
+        /// Non-Redemption stage - PreRedemption
+        vm.expectRevert("Redemption: Must be in post-redemption stage");
+        redemption.postRedeem();
 
+        /// Non-Redemption stage - Redemption
+        vm.startPrank(redemptionMultisig);
+        _setRedemptionStage(_amount);
+        vm.expectRevert("Redemption: Must be in post-redemption stage");
+        redemption.postRedeem();
+        _setPostRedemptionStage();
+        vm.stopPrank();
+
+        /// User did not redeem during redemption period
+        vm.startPrank(hashHolder0);
+        vm.expectRevert("Redemption: User did not redeem any hashes during initial redemption period");
+        redemption.postRedeem();
+        vm.stopPrank();
+
+        /// User already claimed postRedemption amount
+        vm.startPrank(redemptionMultisig);
+        redemption.postRedeem();
+        vm.expectRevert("Redemption: User has already claimed post-redemption amount");
+        redemption.postRedeem();
+        vm.stopPrank();
+    }
+
+    /// @dev Test PostRedeem function success conditions
+    function testPostRedeemSuccess(uint256 _amount) public {
+        /// Set redemption stage
+        vm.startPrank(redemptionMultisig);
+        _setRedemptionStage(_amount);
+        vm.stopPrank();
+
+        /// Two users redeem their hashes
+        uint256 redemptionBalaceBefore = wETH.balanceOf(address(redemption));
+        uint256 hashHolder0BalanceBefore = wETH.balanceOf(hashHolder0);
+        uint256 hashHolder1BalanceBefore = wETH.balanceOf(hashHolder1);
+
+        vm.startPrank(hashHolder0);
+        uint256[] memory set0 = new uint256[](2);
+        set0[0] = 241;
+        set0[1] = 883;
+
+        hashes.setApprovalForAll(address(redemption), true);
+        redemption.redeem(set0);
+
+        vm.stopPrank();
+        vm.startPrank(hashHolder1);
+
+        uint256[] memory set1 = new uint256[](8);
+        set1[0] = 964;
+        set1[1] = 405;
+        set1[2] = 672;
+        set1[3] = 382;
+        set1[4] = 580;
+        set1[5] = 497;
+        set1[6] = 257;
+        set1[7] = 448;
+
+        hashes.setApprovalForAll(address(redemption), true);
+        redemption.redeem(set1);
+        vm.stopPrank();
+
+        vm.startPrank(redemptionMultisig);
+        _setPostRedemptionStage();
+        vm.stopPrank();
+
+        /// Two users claim their post redemption
+        vm.startPrank(hashHolder0);
+        redemption.postRedeem();
+        vm.stopPrank();
+
+        vm.startPrank(hashHolder1);
+        redemption.postRedeem();
+        vm.stopPrank();
+
+        /// Checks the correct transfer of funds and updated variables
+        /// @dev 11 redemptions including 1 from redemption multisig
+        uint256 redemptionPerHash = redemption.redemptionPerHash();
+        uint256 postRedemptionPerHash = redemption.postRedemptionPerHash();
+        assertGt(redemptionPerHash, 0);
+        assertGt(postRedemptionPerHash, 0);
+
+        assertEq(
+            redemptionBalaceBefore,
+            wETH.balanceOf(address(redemption)) + (redemptionPerHash * 11) + (postRedemptionPerHash * 10)
+        );
+        assertEq(
+            hashHolder0BalanceBefore,
+            wETH.balanceOf(hashHolder0) - ((redemptionPerHash * 2) + (postRedemptionPerHash * 2))
+        );
+        assertEq(
+            hashHolder1BalanceBefore,
+            wETH.balanceOf(hashHolder1) - ((redemptionPerHash * 8) + (postRedemptionPerHash * 8))
+        );
+        assertEq(redemption.postRedemptionClaimed(hashHolder0), true);
+        assertEq(redemption.postRedemptionClaimed(hashHolder1), true);
     }
 
     /// OWNER ///
@@ -186,7 +323,7 @@ contract RedemptionTests is Test {
         require(_success);
 
         /// Fail if deposit too low
-        vm.expectRevert("Redemption: Must deposit at least 100 WETH");
+        vm.expectRevert("Redemption: Must deposit at least 420 WETH");
         redemption.setRedemptionStage(minDeposit - 1);
 
         /// Fail if WETH approval not granted
@@ -212,8 +349,49 @@ contract RedemptionTests is Test {
         redemption.setRedemptionStage(_amount);
     }
 
-    function testSetPostRedemptionStage() public prank(redemptionMultisig) {
+    /// @dev Tests SetPostRedemption function
+    function testSetPostRedemptionStage(uint256 _amount) public prank(redemptionMultisig) {
+        /// Fail if not in redemption stage: pre-redemption
+        vm.expectRevert("Redemption: Must be in redemption stage");
+        redemption.setPostRedemptionStage();
 
+        /// Set redemption stage
+        _setRedemptionStage(_amount);
+
+        /// Not enough time has elapsed
+        vm.expectRevert("Redemption: Minimum redemption time has not elapsed");
+        redemption.setPostRedemptionStage();
+
+        /// Nothing has been redeemed
+        vm.warp(redemption.redemptionSetTime() + redemption.MINREDEMPTIONTIME() + 1);
+
+        vm.expectRevert("Redemption: Nothing has been redeemed");
+        redemption.setPostRedemptionStage();
+
+        uint256[] memory set = new uint256[](1);
+        set[0] = 301;
+
+        hashes.approve(address(redemption), 301);
+        redemption.redeem(set);
+
+        uint256 redemptionBalanceBeforeDeal = wETH.balanceOf(address(redemption));
+
+        /// Not enough WETH left for post redemption
+        deal(address(wETH), address(redemption), 1 ether - 1);
+
+        vm.expectRevert("Redemption: Contract does not contain minimum post redemption amount");
+        redemption.setPostRedemptionStage();
+
+        deal(address(wETH), address(redemption), redemptionBalanceBeforeDeal);
+
+        /// Success
+        redemption.setPostRedemptionStage();
+
+        assertEq(redemption.postRedemptionPerHash(), redemptionBalanceBeforeDeal / redemption.totalNumberRedeemed());
+
+        /// Fail if not in redemption stage: post-redemption
+        vm.expectRevert("Redemption: Must be in redemption stage");
+        redemption.setPostRedemptionStage();
     }
 
     /// UTILS ///
@@ -241,18 +419,12 @@ contract RedemptionTests is Test {
     /// Redemption -> PostRedemption
     function _setPostRedemptionStage() internal {
         uint256[] memory set = new uint256[](1);
-        set[0] = 706;
+        set[0] = 301;
 
-        hashes.approve(address(redemption), 706);
+        hashes.approve(address(redemption), 301);
         redemption.redeem(set);
 
         vm.warp(redemption.redemptionSetTime() + redemption.MINREDEMPTIONTIME() + 1);
         redemption.setPostRedemptionStage();
-    }
-
-    /// @dev Must be called by Redemption Multisig
-    /// Preedemption -> PostRedemption
-    function _setRedemptionAndPostRedemptionStage(uint256 _amount) internal {
-
     }
 }

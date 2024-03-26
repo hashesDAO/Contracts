@@ -9,9 +9,20 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @title Hashes Redemption 
 /// @author Cooki
-/// @dev This contract ...
+/// @notice This contract implements a staged redemption process for the Hashes DAO. Eligible DAO Hash owners can redeem their
+/// NFTs to redeem an initial pro rata share of the deposited Wrapped ETH. Following the initial redemption period, a post 
+/// redempion period can begin, wherein those users who redeemed their NFTs during the redemption period can redeem a pro rata
+/// share of the remaining funds. The stages are as follows:
+/// PreRedemption:  Redemptions have not begun; the multisig owner must deposit the DAO's Wrapped ETH via the setRedemptionStage()
+///                 function to move the contract to the redemption stage.
+/// Redemption:     Redemptions have begun, and all eligible DAO hash owners can redeem their NFTs using the redeem() function.
+///                 After the MINREDEMPTIONTIME (180 days) has expired, the multisig owner can move the contract to the post 
+///                 redemption stage via the setPostRedemptionStage() function.
+/// PostRedemption: Post redemptions of the remaining WETH have begun. Users who successfully redeemed their DAO hashes during the 
+///                 redemption stage can claim the remaining post redemption amount that is in proportion to the number of DAO
+///                 hashes they initially redeemed.
+/// @dev This contract must be deployed to Ethereum mainnet
 contract Redemption is Ownable, ReentrancyGuard {
-
     /// CONSTANTS ///
 
     /// @notice Wrapped ETH
@@ -21,7 +32,7 @@ contract Redemption is Ownable, ReentrancyGuard {
     Hashes public constant HASHES = Hashes(0xD07e72b00431af84AD438CA995Fd9a7F0207542d);
 
     /// @notice Minimum number of Wrapped ETH that can deposited to enable the redemption stage
-    uint256 public constant MINDEPOSITAMOUNT = 100;
+    uint256 public constant MINDEPOSITAMOUNT = 420;
 
     /// @notice Minimum number of Wrapped ETH that must remain to enable the post redemption stage
     uint256 public constant MINPOSTREDEMPTIONAMOUNT = 1;
@@ -74,25 +85,22 @@ contract Redemption is Ownable, ReentrancyGuard {
         revert();
     }
 
-    /// @notice This function allows any eligible DAO hash owner to redeem their hashes for the initial pro rata
-    /// redemption amount
+    /// @notice This function allows any eligible DAO hash owner to redeem their hashes for the initial pro rata redemption
+    /// amount
     /// @param _tokenIds An array of eligible DAO hash token Ids
     /// @dev Owner of DAO hashes must approve contract to move them
     function redeem(uint256[] calldata _tokenIds) external nonReentrant {
         require(stage == Stages.Redemption, "Redemption: Must be in redemption stage");
-
         uint256 length = _tokenIds.length;
         require(length > 0, "Redemption: Must redeem more than zero Hashes");
 
         uint256 tokenId;
         for (uint256 i; i < length; i++) {
             tokenId = _tokenIds[i];
-
             require(
                 isHashEligibleForRedemption(tokenId), 
                 string(abi.encodePacked('Redemption: Hash with token Id #', Strings.toString(tokenId), ' is ineligible'))
             );
-
             HASHES.transferFrom(msg.sender, address(this), tokenId);
         }
 
@@ -101,18 +109,25 @@ contract Redemption is Ownable, ReentrancyGuard {
         WETH.transfer(msg.sender, redemptionPerHash * length);
     }
 
+    /// @notice This function allows users who redeemed their DAO hashes during the redemption stage to redeem the remaining
+    /// post redemption amount
+    /// NOTE Users who did not redeem eligible DAO hashes during the redemption stage will NOT be eligible to redeem during
+    /// the post redemption stage
     function postRedeem() external nonReentrant {
         require(stage == Stages.PostRedemption, "Redemption: Must be in post-redemption stage");
-        require(amountRedeemed[msg.sender] > 0, "Redemption: User did not redeem any hashes during initial redeem period");
+        uint256 amountRedeemedByUser = amountRedeemed[msg.sender];
+        require(amountRedeemedByUser > 0, "Redemption: User did not redeem any hashes during initial redemption period");
         require(!postRedemptionClaimed[msg.sender], "Redemption: User has already claimed post-redemption amount");
 
         postRedemptionClaimed[msg.sender] = true;
-        WETH.transfer(msg.sender, postRedemptionPerHash);
+        WETH.transfer(msg.sender, postRedemptionPerHash * amountRedeemedByUser);
     }
 
     /// OWNER ONLY ///
 
-    /// @dev Multisig owner must grant contract permission to move WETH
+    /// @notice This function allows the multisig owner to set the redemption stage by depositing the to-be-redeemed Wrapped ETH
+    /// @param _amount The amount of WETH to be deposited for redemption
+    /// NOTE The contract must be in the pre-redemption stage and the multisig owner must grant contract permission to move WETH
     function setRedemptionStage(uint256 _amount) external onlyOwner nonReentrant {
         require(stage == Stages.PreRedemption, "Redemption: Must be in pre-redemption stage");
         require(
@@ -126,18 +141,19 @@ contract Redemption is Ownable, ReentrancyGuard {
         stage = Stages.Redemption;
     }
 
+    /// @notice This function allows the multisig owner to set the post redempion stage
+    /// NOTE The contract must be in the redemption stage
     function setPostRedemptionStage() external onlyOwner nonReentrant {
         require(stage == Stages.Redemption, "Redemption: Must be in redemption stage");
         require(
             block.timestamp > redemptionSetTime + MINREDEMPTIONTIME,
-            "Redemption: Min redemption time has not elapsed"
+            "Redemption: Minimum redemption time has not elapsed"
         );
         require(totalNumberRedeemed > 0, "Redemption: Nothing has been redeemed");
-        
         uint256 wETHBalance = WETH.balanceOf(address(this));
         require(
             wETHBalance > MINPOSTREDEMPTIONAMOUNT * 10 ** WETH.decimals(),
-            "Redemption: Contract does not contain min claim amount"
+            "Redemption: Contract does not contain minimum post redemption amount"
         );
 
         postRedemptionPerHash = wETHBalance / totalNumberRedeemed;
@@ -146,7 +162,9 @@ contract Redemption is Ownable, ReentrancyGuard {
 
     /// VIEWS ///
 
-    /// @notice
+    /// @notice A view function that returns true if a given hashes token id is eligible for redemption, and false if not
+    /// @param _tokenId The token Id of hash to be checked if eligible for redemption
+    /// @return A boolean; true if eligible, false if not
     function isHashEligibleForRedemption(uint256 _tokenId) public view returns (bool) {
         if (_tokenId >= 1000) return false;             /// Non-DAO hash
         if (_tokenId < 100) return false;               /// Dex Labs hash
