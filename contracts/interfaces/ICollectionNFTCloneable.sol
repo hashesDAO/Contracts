@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { ICollectionNFTEligibilityPredicate } from "../interfaces/ICollectionNFTEligibilityPredicate.sol";
-import { ICollectionNFTMintFeePredicate } from "../interfaces/ICollectionNFTMintFeePredicate.sol";
+import {ICollectionNFTEligibilityPredicate} from "../interfaces/ICollectionNFTEligibilityPredicate.sol";
+import {ICollectionNFTMintFeePredicate} from "../interfaces/ICollectionNFTMintFeePredicate.sol";
 
 interface ICollectionNFTCloneable {
     event Minted(address indexed minter, uint256 indexed tokenId, uint256 indexed hashesTokenId);
@@ -29,9 +29,10 @@ interface ICollectionNFTCloneable {
 
     function mintFeePredicateContract() external view returns (ICollectionNFTMintFeePredicate);
 
-    function hashesIdToCollectionTokenIdMapping(
-        uint256 _hashesTokenId
-    ) external view returns (bool exists, uint256 tokenId);
+    function hashesIdToCollectionTokenIdMapping(uint256 _hashesTokenId)
+        external
+        view
+        returns (bool exists, uint256 tokenId);
 
     function balanceOf(address owner) external view returns (uint256);
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import { LibEIP712 } from "./LibEIP712.sol";
+import {LibEIP712} from "./LibEIP712.sol";
 
 library LibDeactivateAuthority {
     struct DeactivateAuthority {
@@ -21,10 +21,11 @@ library LibDeactivateAuthority {
     /// @param _deactivate The deactivate structure.
     /// @param _eip712DomainHash The hash of the EIP712 domain.
     /// @return deactivateHash Keccak-256 EIP712 hash of the deactivation.
-    function getDeactivateAuthorityHash(
-        DeactivateAuthority memory _deactivate,
-        bytes32 _eip712DomainHash
-    ) internal pure returns (bytes32 deactivateHash) {
+    function getDeactivateAuthorityHash(DeactivateAuthority memory _deactivate, bytes32 _eip712DomainHash)
+        internal
+        pure
+        returns (bytes32 deactivateHash)
+    {
         deactivateHash = LibEIP712.hashEIP712Message(_eip712DomainHash, hashDeactivateAuthority(_deactivate));
         return deactivateHash;
     }

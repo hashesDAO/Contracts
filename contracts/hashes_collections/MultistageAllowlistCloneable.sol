@@ -2,12 +2,12 @@
 pragma solidity 0.8.6;
 
 // Imports.
-import { ICollection } from "../interfaces/ICollection.sol";
-import { ICollectionCloneable } from "../interfaces/ICollectionCloneable.sol";
-import { ICollectionNFTEligibilityPredicate } from "../interfaces/ICollectionNFTEligibilityPredicate.sol";
-import { ICollectionNFTMintFeePredicate } from "../interfaces/ICollectionNFTMintFeePredicate.sol";
-import { IHashes } from "../interfaces/IHashes.sol";
-import { OwnableCloneable } from "./OwnableCloneable.sol";
+import {ICollection} from "../interfaces/ICollection.sol";
+import {ICollectionCloneable} from "../interfaces/ICollectionCloneable.sol";
+import {ICollectionNFTEligibilityPredicate} from "../interfaces/ICollectionNFTEligibilityPredicate.sol";
+import {ICollectionNFTMintFeePredicate} from "../interfaces/ICollectionNFTMintFeePredicate.sol";
+import {IHashes} from "../interfaces/IHashes.sol";
+import {OwnableCloneable} from "./OwnableCloneable.sol";
 
 /**
  * @title The interface for the NFT smart contract.
@@ -58,7 +58,7 @@ contract MultiStageAllowlistCloneable is
      * @dev param allowlistActivated - Specifies if the tokenIdAllowlist and walletAllowlist should be considered.
      * @dev param size - The max number of tokens available to mint during the stage.
      * @dev param eligibilityExtension - An additional smart contract that can be used to check eligibility to mint.
-                                         Set to address(0) to disable the functionality
+     *                                      Set to address(0) to disable the functionality
      * @dev param price - The mint price during the stage.
      * @dev param allowlistSize - The size of the mapping of bitfields.
      * @dev param tokenIdAllowlist - The bitmaps that specify what token IDs are eligible to mint during the stage.
@@ -80,7 +80,7 @@ contract MultiStageAllowlistCloneable is
      * @dev param onlyDaoHashes - The flag indicates that only DAO hashes are eligible to mint during the stage.
      * @dev param allowlistActivated - Specifies if the tokenIdAllowlist and walletAllowlist should be considered.
      * @dev param eligibilityExtension - An additional smart contract that can be used to check eligibility to mint.
-                                         Set to address(0) to disable the functionality.
+     *                                      Set to address(0) to disable the functionality.
      * @dev param size - The max number of tokens available to mint during the stage.
      * @dev param price - The mint price during the stage.
      * @dev param walletAllowlist - The additional mapping of allowed wallet addresses.
@@ -206,22 +206,19 @@ contract MultiStageAllowlistCloneable is
      * @param tokenId The ID of the token.
      * @param eligibility Eligibility status.
      */
-    function setTokenIdEligibility(
-        uint8 stage,
-        uint256 tokenId,
-        bool eligibility
-    ) external onlyOwner isInitialized validStage(stage) {
+    function setTokenIdEligibility(uint8 stage, uint256 tokenId, bool eligibility)
+        external
+        onlyOwner
+        isInitialized
+        validStage(stage)
+    {
         (uint256 elementIndex, uint256 bitIndex) = _getTokenElementPositions(tokenId);
         if (eligibility) {
-            stages[stage].tokenIdAllowlist[elementIndex] = _setBit(
-                stages[stage].tokenIdAllowlist[elementIndex],
-                bitIndex
-            );
+            stages[stage].tokenIdAllowlist[elementIndex] =
+                _setBit(stages[stage].tokenIdAllowlist[elementIndex], bitIndex);
         } else {
-            stages[stage].tokenIdAllowlist[elementIndex] = _clearBit(
-                stages[stage].tokenIdAllowlist[elementIndex],
-                bitIndex
-            );
+            stages[stage].tokenIdAllowlist[elementIndex] =
+                _clearBit(stages[stage].tokenIdAllowlist[elementIndex], bitIndex);
         }
     }
 
@@ -230,10 +227,12 @@ contract MultiStageAllowlistCloneable is
      * @param stage The ID of the stage.
      * @param tokenIdAllowlist The bitmaps that specify what token IDs are eligible to mint during the stage.
      */
-    function setTokenIdAllowlist(
-        uint8 stage,
-        uint256[] memory tokenIdAllowlist
-    ) external onlyOwner isInitialized validStage(stage) {
+    function setTokenIdAllowlist(uint8 stage, uint256[] memory tokenIdAllowlist)
+        external
+        onlyOwner
+        isInitialized
+        validStage(stage)
+    {
         for (uint256 i = 0; i < tokenIdAllowlist.length; i++) {
             stages[stage].tokenIdAllowlist[i] = tokenIdAllowlist[i];
         }
@@ -247,11 +246,12 @@ contract MultiStageAllowlistCloneable is
      * @param walletAddress The wallet address.
      * @param eligibility Eligibility status.
      */
-    function setWalletEligibility(
-        uint8 stage,
-        address walletAddress,
-        bool eligibility
-    ) external onlyOwner isInitialized validStage(stage) {
+    function setWalletEligibility(uint8 stage, address walletAddress, bool eligibility)
+        external
+        onlyOwner
+        isInitialized
+        validStage(stage)
+    {
         stages[stage].walletAllowlist[walletAddress] = eligibility;
     }
 
@@ -260,10 +260,12 @@ contract MultiStageAllowlistCloneable is
      * @param stage The ID of the stage.
      * @param extensionAddress The address of a CollectionNFTEligibilityPredicate smart contract.
      */
-    function setEligibilityExtension(
-        uint8 stage,
-        address extensionAddress
-    ) external onlyOwner isInitialized validStage(stage) {
+    function setEligibilityExtension(uint8 stage, address extensionAddress)
+        external
+        onlyOwner
+        isInitialized
+        validStage(stage)
+    {
         stages[stage].eligibilityExtension = ICollectionNFTEligibilityPredicate(extensionAddress);
     }
 
@@ -314,16 +316,18 @@ contract MultiStageAllowlistCloneable is
      * @param _hashesTokenId The hashes token ID used to mint.
      * @return True, if the user is eligible to mint, else - false.
      */
-    function isTokenEligibleToMint(
-        uint256 _tokenId,
-        uint256 _hashesTokenId
-    ) external view override isInitialized returns (bool) {
+    function isTokenEligibleToMint(uint256 _tokenId, uint256 _hashesTokenId)
+        external
+        view
+        override
+        isInitialized
+        returns (bool)
+    {
         if (
-            mintingClosed ||
-            !stagesActive ||
-            (stages[currentStage].size != UNLIMITED_TOKENS && _tokenId >= startTokenId + stages[currentStage].size) ||
-            _tokenId < startTokenId ||
-            (stages[currentStage].onlyDaoHashes && _hashesTokenId >= hashesGovernanceCap)
+            mintingClosed || !stagesActive
+                || (stages[currentStage].size != UNLIMITED_TOKENS
+                    && _tokenId >= startTokenId + stages[currentStage].size) || _tokenId < startTokenId
+                || (stages[currentStage].onlyDaoHashes && _hashesTokenId >= hashesGovernanceCap)
         ) {
             return false;
         }
@@ -332,16 +336,13 @@ contract MultiStageAllowlistCloneable is
         bool allowlistStatus = true;
 
         if (stages[currentStage].allowlistActivated) {
-            allowlistStatus =
-                _isTokenIdAllowed(currentStage, _hashesTokenId) ||
-                stages[currentStage].walletAllowlist[hashesContract.ownerOf(_hashesTokenId)];
+            allowlistStatus = _isTokenIdAllowed(currentStage, _hashesTokenId)
+                || stages[currentStage].walletAllowlist[hashesContract.ownerOf(_hashesTokenId)];
         }
 
         if (address(stages[currentStage].eligibilityExtension) != address(0)) {
-            eligibilityExtensionStatus = stages[currentStage].eligibilityExtension.isTokenEligibleToMint(
-                _tokenId,
-                _hashesTokenId
-            );
+            eligibilityExtensionStatus =
+                stages[currentStage].eligibilityExtension.isTokenEligibleToMint(_tokenId, _hashesTokenId);
         }
 
         return allowlistStatus && eligibilityExtensionStatus;
@@ -353,10 +354,13 @@ contract MultiStageAllowlistCloneable is
      * @param _hashesTokenId The hashes token ID used to mint.
      * @return The mint fee.
      */
-    function getTokenMintFee(
-        uint256 _tokenId,
-        uint256 _hashesTokenId
-    ) external view override isInitialized returns (uint256) {
+    function getTokenMintFee(uint256 _tokenId, uint256 _hashesTokenId)
+        external
+        view
+        override
+        isInitialized
+        returns (uint256)
+    {
         return stages[currentStage].price;
     }
 

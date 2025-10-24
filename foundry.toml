@@ -1,10 +1,9 @@
 [profile.default]
-solc-version = "0.8.6"
+solc_version = "0.8.6"
 libs = ['lib']
 optimizer = false
 via_ir = false
 optimizer_runs = 420_000
-fuzz_max_global_rejects = 420_000
 
 gas_reports = [
     "Hashes",

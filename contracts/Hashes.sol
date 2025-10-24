@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import { IHashes } from "./interfaces/IHashes.sol";
-import { LibDeactivateToken } from "./lib/LibDeactivateToken.sol";
-import { LibEIP712 } from "./lib/LibEIP712.sol";
-import { LibSignature } from "./lib/LibSignature.sol";
-import { SafeMath } from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import {IHashes} from "./interfaces/IHashes.sol";
+import {LibDeactivateToken} from "./lib/LibDeactivateToken.sol";
+import {LibEIP712} from "./lib/LibEIP712.sol";
+import {LibSignature} from "./lib/LibSignature.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// [MIT License]
 /// @title Base64
@@ -37,9 +37,7 @@ library Base64 {
 
             for {
                 let i := 0
-            } lt(i, len) {
-
-            } {
+            } lt(i, len) {} {
                 i := add(i, 3)
                 let input := and(mload(add(data, i)), 0xffffff)
 
@@ -162,12 +160,10 @@ contract Hashes is IHashes, ERC721Enumerable, ReentrancyGuard, Ownable {
      * @param _governanceCap Number of hashes qualifying for governance
      * @param _baseTokenURI The initial base token URI.
      */
-    constructor(
-        uint256 _mintFee,
-        uint256 _reservedAmount,
-        uint256 _governanceCap,
-        string memory _baseTokenURI
-    ) ERC721("Hashes", "HASH") Ownable() {
+    constructor(uint256 _mintFee, uint256 _reservedAmount, uint256 _governanceCap, string memory _baseTokenURI)
+        ERC721("Hashes", "HASH")
+        Ownable()
+    {
         reservedAmount = _reservedAmount;
         activationFee = _mintFee;
         mintFee = _mintFee;
@@ -243,10 +239,10 @@ contract Hashes is IHashes, ERC721Enumerable, ReentrancyGuard, Ownable {
         bool sent;
         uint256 requiredFee = activationFee.mul(activationCount);
         require(msg.value >= requiredFee, "Hashes: must pay adequate fee to activate hash.");
-        (sent, ) = owner().call{ value: requiredFee }("");
+        (sent,) = owner().call{value: requiredFee}("");
         require(sent, "Hashes: couldn't pay owner the activation fee.");
         if (msg.value > requiredFee) {
-            (sent, ) = msg.sender.call{ value: msg.value - requiredFee }("");
+            (sent,) = msg.sender.call{value: msg.value - requiredFee}("");
             require(sent, "Hashes: couldn't refund sender with the remaining ether.");
         }
 
@@ -263,18 +259,19 @@ contract Hashes is IHashes, ERC721Enumerable, ReentrancyGuard, Ownable {
      *        their holdings.
      * @return deactivationCount The amount of tokens that were deactivated.
      */
-    function deactivateTokens(
-        address _tokenOwner,
-        uint256 _proposalId,
-        bytes memory _signature
-    ) external override nonReentrant onlyOwner returns (uint256 deactivationCount) {
+    function deactivateTokens(address _tokenOwner, uint256 _proposalId, bytes memory _signature)
+        external
+        override
+        nonReentrant
+        onlyOwner
+        returns (uint256 deactivationCount)
+    {
         // Ensure that the token owner has approved the deactivation.
         require(lastProposalIds[_tokenOwner] < _proposalId, "Hashes: can't re-use an old proposal ID.");
         lastProposalIds[_tokenOwner] = _proposalId;
         bytes32 eip712DomainHash = LibEIP712.hashEIP712Domain(name(), version, getChainId(), address(this));
         bytes32 deactivateHash = LibDeactivateToken.getDeactivateTokenHash(
-            LibDeactivateToken.DeactivateToken({ proposalId: _proposalId }),
-            eip712DomainHash
+            LibDeactivateToken.DeactivateToken({proposalId: _proposalId}), eip712DomainHash
         );
         require(
             LibSignature.getSignerOfHash(deactivateHash, _signature) == _tokenOwner,
@@ -324,7 +321,7 @@ contract Hashes is IHashes, ERC721Enumerable, ReentrancyGuard, Ownable {
             // If the minting fee is non-zero
 
             // Send the fee to HashesDAO.
-            (bool sent, ) = owner().call{ value: mintFee }("");
+            (bool sent,) = owner().call{value: mintFee}("");
             require(sent, "Hashes: failed to send ETH to HashesDAO");
 
             // Set the mintFeePaid to the current minting fee
@@ -337,7 +334,7 @@ contract Hashes is IHashes, ERC721Enumerable, ReentrancyGuard, Ownable {
 
             // Refund the remaining ether balance to the sender. Since there are no
             // other payable functions, this remainder will always be the senders.
-            (bool sent, ) = _msgSender().call{ value: msg.value - mintFeePaid }("");
+            (bool sent,) = _msgSender().call{value: msg.value - mintFeePaid}("");
             require(sent, "Hashes: failed to refund ETH.");
         }
 
@@ -488,12 +485,11 @@ contract Hashes is IHashes, ERC721Enumerable, ReentrancyGuard, Ownable {
      *
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId,
-        uint256 batchSize
-    ) internal virtual override {
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
+        internal
+        virtual
+        override
+    {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
 
         if (tokenId < governanceCap && !deactivated[tokenId]) {
@@ -540,7 +536,7 @@ contract Hashes is IHashes, ERC721Enumerable, ReentrancyGuard, Ownable {
             checkpoints[_delegatee][delNum - 1].votes = _newVotes;
         } else {
             // Create a new id, vote pair
-            checkpoints[_delegatee][delNum] = Checkpoint({ id: blockNumber, votes: _newVotes });
+            checkpoints[_delegatee][delNum] = Checkpoint({id: blockNumber, votes: _newVotes});
             numCheckpoints[_delegatee] = delNum.add(1);
         }
 

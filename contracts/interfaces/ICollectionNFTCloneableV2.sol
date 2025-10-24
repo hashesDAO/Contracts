@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { ICollectionNFTEligibilityPredicate } from "../interfaces/ICollectionNFTEligibilityPredicate.sol";
-import { ICollectionNFTMintFeePredicate } from "../interfaces/ICollectionNFTMintFeePredicate.sol";
-import { ICollectionNFTTokenURIPredicate } from "../interfaces/ICollectionNFTTokenURIPredicate.sol";
+import {ICollectionNFTEligibilityPredicate} from "../interfaces/ICollectionNFTEligibilityPredicate.sol";
+import {ICollectionNFTMintFeePredicate} from "../interfaces/ICollectionNFTMintFeePredicate.sol";
+import {ICollectionNFTTokenURIPredicate} from "../interfaces/ICollectionNFTTokenURIPredicate.sol";
 
 interface ICollectionNFTCloneableV2 {
     function mint(uint256 _hashesTokenId) external payable;
@@ -30,7 +30,8 @@ interface ICollectionNFTCloneableV2 {
 
     function TokenURIPredicateContract() external view returns (ICollectionNFTTokenURIPredicate);
 
-    function tokenCollectionIdToHashesIdMapping(
-        uint256 _hashesTokenId
-    ) external view returns (bool exists, uint256 tokenId, bytes32 hashesHash);
+    function tokenCollectionIdToHashesIdMapping(uint256 _hashesTokenId)
+        external
+        view
+        returns (bool exists, uint256 tokenId, bytes32 hashesHash);
 }

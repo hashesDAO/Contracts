@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import { IHashes } from "./interfaces/IHashes.sol";
-import { LibBytes } from "./lib/LibBytes.sol";
-import { LibDeactivateAuthority } from "./lib/LibDeactivateAuthority.sol";
-import { LibEIP712 } from "./lib/LibEIP712.sol";
-import { LibSignature } from "./lib/LibSignature.sol";
-import { LibVeto } from "./lib/LibVeto.sol";
-import { LibVoteCast } from "./lib/LibVoteCast.sol";
-import { MathHelpers } from "./lib/MathHelpers.sol";
-import { SafeMath } from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import {IHashes} from "./interfaces/IHashes.sol";
+import {LibBytes} from "./lib/LibBytes.sol";
+import {LibDeactivateAuthority} from "./lib/LibDeactivateAuthority.sol";
+import {LibEIP712} from "./lib/LibEIP712.sol";
+import {LibSignature} from "./lib/LibSignature.sol";
+import {LibVeto} from "./lib/LibVeto.sol";
+import {LibVoteCast} from "./lib/LibVoteCast.sol";
+import {MathHelpers} from "./lib/MathHelpers.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "./lib/MathHelpers.sol";
 
 /**
@@ -137,32 +137,17 @@ contract HashesDAO is Ownable {
 
     /// @notice Emitted when a proposal action has been canceled
     event CancelTransaction(
-        bytes32 indexed txHash,
-        address indexed target,
-        uint256 value,
-        string signature,
-        bytes data,
-        uint256 eta
+        bytes32 indexed txHash, address indexed target, uint256 value, string signature, bytes data, uint256 eta
     );
 
     /// @notice Emitted when a proposal action has been executed
     event ExecuteTransaction(
-        bytes32 indexed txHash,
-        address indexed target,
-        uint256 value,
-        string signature,
-        bytes data,
-        uint256 eta
+        bytes32 indexed txHash, address indexed target, uint256 value, string signature, bytes data, uint256 eta
     );
 
     /// @notice Emitted when a proposal action has been queued
     event QueueTransaction(
-        bytes32 indexed txHash,
-        address indexed target,
-        uint256 value,
-        string signature,
-        bytes data,
-        uint256 eta
+        bytes32 indexed txHash, address indexed target, uint256 value, string signature, bytes data, uint256 eta
     );
 
     /**
@@ -253,9 +238,8 @@ contract HashesDAO is Ownable {
             "HashesDAO: proposer votes below proposal threshold."
         );
         require(
-            _targets.length == _values.length &&
-                _targets.length == _signatures.length &&
-                _targets.length == _calldatas.length,
+            _targets.length == _values.length && _targets.length == _signatures.length
+                && _targets.length == _calldatas.length,
             "HashesDAO: proposal function information parity mismatch."
         );
         require(_targets.length != 0, "HashesDAO: must provide actions.");
@@ -320,8 +304,7 @@ contract HashesDAO is Ownable {
         // ended and there is a simple majority in favor and also above
         // the quorum
         require(
-            state(_proposalId) == ProposalState.Succeeded,
-            "HashesDAO: proposal can only be queued if it is succeeded."
+            state(_proposalId) == ProposalState.Succeeded, "HashesDAO: proposal can only be queued if it is succeeded."
         );
         Proposal storage proposal = proposals[_proposalId];
 
@@ -336,12 +319,7 @@ contract HashesDAO is Ownable {
             require(!queuedTransactions[txHash], "HashesDAO: proposal action already queued at eta.");
             queuedTransactions[txHash] = true;
             emit QueueTransaction(
-                txHash,
-                proposal.targets[i],
-                proposal.values[i],
-                proposal.signatures[i],
-                proposal.calldatas[i],
-                eta
+                txHash, proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], eta
             );
         }
         // Set proposal eta timestamp after which it can be executed
@@ -359,10 +337,7 @@ contract HashesDAO is Ownable {
      */
     function execute(uint128 _proposalId) external payable {
         // Ensure proposal is queued
-        require(
-            state(_proposalId) == ProposalState.Queued,
-            "HashesDAO: proposal can only be executed if it is queued."
-        );
+        require(state(_proposalId) == ProposalState.Queued, "HashesDAO: proposal can only be executed if it is queued.");
         Proposal storage proposal = proposals[_proposalId];
         // Ensure proposal has been in the queue long enough
         require(block.timestamp >= proposal.eta, "HashesDAO: proposal hasn't finished queue time length.");
@@ -376,11 +351,7 @@ contract HashesDAO is Ownable {
         for (uint256 i = 0; i < proposal.targets.length; i++) {
             bytes32 txHash = keccak256(
                 abi.encode(
-                    proposal.targets[i],
-                    proposal.values[i],
-                    proposal.signatures[i],
-                    proposal.calldatas[i],
-                    proposal.eta
+                    proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], proposal.eta
                 )
             );
             require(queuedTransactions[txHash], "HashesDAO: transaction hasn't been queued.");
@@ -392,7 +363,7 @@ contract HashesDAO is Ownable {
             require(bytes(proposal.signatures[i]).length != 0, "HashesDAO: Invalid function signature.");
             callData = abi.encodePacked(bytes4(keccak256(bytes(proposal.signatures[i]))), proposal.calldatas[i]);
             // solium-disable-next-line security/no-call-value
-            (bool success, ) = proposal.targets[i].call{ value: proposal.values[i] }(callData);
+            (bool success,) = proposal.targets[i].call{value: proposal.values[i]}(callData);
 
             require(success, "HashesDAO: transaction execution reverted.");
 
@@ -437,11 +408,7 @@ contract HashesDAO is Ownable {
         for (uint256 i = 0; i < proposal.targets.length; i++) {
             bytes32 txHash = keccak256(
                 abi.encode(
-                    proposal.targets[i],
-                    proposal.values[i],
-                    proposal.signatures[i],
-                    proposal.calldatas[i],
-                    proposal.eta
+                    proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], proposal.eta
                 )
             );
             queuedTransactions[txHash] = false;
@@ -466,12 +433,9 @@ contract HashesDAO is Ownable {
      * @param _deactivate Deactivate tokens (true) or don't (false).
      * @param _deactivateSignature The signature to use when deactivating tokens.
      */
-    function castVote(
-        uint128 _proposalId,
-        bool _support,
-        bool _deactivate,
-        bytes memory _deactivateSignature
-    ) external {
+    function castVote(uint128 _proposalId, bool _support, bool _deactivate, bytes memory _deactivateSignature)
+        external
+    {
         return _castVote(msg.sender, _proposalId, _support, _deactivate, _deactivateSignature);
     }
 
@@ -495,7 +459,7 @@ contract HashesDAO is Ownable {
         // EIP712 hashing logic
         bytes32 eip712DomainHash = LibEIP712.hashEIP712Domain(name, version, getChainId(), address(this));
         bytes32 voteCastHash = LibVoteCast.getVoteCastHash(
-            LibVoteCast.VoteCast({ proposalId: _proposalId, support: _support, deactivate: _deactivate }),
+            LibVoteCast.VoteCast({proposalId: _proposalId, support: _support, deactivate: _deactivate}),
             eip712DomainHash
         );
 
@@ -522,7 +486,7 @@ contract HashesDAO is Ownable {
         // Ensure that a sufficient amount of authorities have signed to veto
         // this proposal.
         bytes32 eip712DomainHash = LibEIP712.hashEIP712Domain(name, version, getChainId(), address(this));
-        bytes32 vetoHash = LibVeto.getVetoHash(LibVeto.Veto({ proposalId: _proposalId }), eip712DomainHash);
+        bytes32 vetoHash = LibVeto.getVetoHash(LibVeto.Veto({proposalId: _proposalId}), eip712DomainHash);
         _verifyAuthorityAction(vetoHash, _signatures);
 
         // Cancel the proposal.
@@ -532,11 +496,7 @@ contract HashesDAO is Ownable {
         for (uint256 i = 0; i < proposal.targets.length; i++) {
             bytes32 txHash = keccak256(
                 abi.encode(
-                    proposal.targets[i],
-                    proposal.values[i],
-                    proposal.signatures[i],
-                    proposal.calldatas[i],
-                    proposal.eta
+                    proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], proposal.eta
                 )
             );
             queuedTransactions[txHash] = false;
@@ -561,16 +521,15 @@ contract HashesDAO is Ownable {
      * @param _authorities A list of authorities to delete. This isn't
      *        security-critical, but it allows the state to be cleaned up.
      */
-    function deactivateAuthorities(
-        bytes[] memory _signatures,
-        address[] memory _authorities
-    ) external onlyAuthoritiesActive {
+    function deactivateAuthorities(bytes[] memory _signatures, address[] memory _authorities)
+        external
+        onlyAuthoritiesActive
+    {
         // Ensure that a sufficient amount of authorities have signed to
         // deactivate the authority system.
         bytes32 eip712DomainHash = LibEIP712.hashEIP712Domain(name, version, getChainId(), address(this));
         bytes32 deactivateHash = LibDeactivateAuthority.getDeactivateAuthorityHash(
-            LibDeactivateAuthority.DeactivateAuthority({ support: true }),
-            eip712DomainHash
+            LibDeactivateAuthority.DeactivateAuthority({support: true}), eip712DomainHash
         );
         _verifyAuthorityAction(deactivateHash, _signatures);
 
@@ -593,9 +552,7 @@ contract HashesDAO is Ownable {
      * @return signatures Function signatures.
      * @return calldatas Calldata passed to the function.
      */
-    function getActions(
-        uint128 _proposalId
-    )
+    function getActions(uint128 _proposalId)
         external
         view
         returns (
@@ -635,9 +592,11 @@ contract HashesDAO is Ownable {
      * @param _proposalId Proposal id.
      * @return Proposal attributes.
      */
-    function getProposal(
-        uint128 _proposalId
-    ) external view returns (bool, bool, address, uint32, uint128, uint256, uint256, uint256, uint256, uint256) {
+    function getProposal(uint128 _proposalId)
+        external
+        view
+        returns (bool, bool, address, uint32, uint128, uint256, uint256, uint256, uint256, uint256)
+    {
         Proposal storage proposal = proposals[_proposalId];
         return (
             proposal.canceled,
@@ -754,7 +713,7 @@ contract HashesDAO is Ownable {
             uint256 deactivationCount = hashesToken.deactivateTokens(_voter, _proposalId, _deactivateSignature);
             if (deactivationCount > 0) {
                 // Transfer the voter the activation fee for each of the deactivated tokens.
-                (bool sent, ) = _voter.call{ value: hashesToken.activationFee().mul(deactivationCount) }("");
+                (bool sent,) = _voter.call{value: hashesToken.activationFee().mul(deactivationCount)}("");
                 require(sent, "Hashes: couldn't re-pay the token owner after deactivating hashes.");
             }
         }

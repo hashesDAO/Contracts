@@ -100,11 +100,7 @@ library LibBytes {
                     // Note: the first check is always true,
                     // this could have been a do-while loop.
                     // solhint-disable-next-line no-empty-blocks
-                    for {
-
-                    } lt(source, sEnd) {
-
-                    } {
+                    for {} lt(source, sEnd) {} {
                         mstore(dest, mload(source))
                         source := add(source, 32)
                         dest := add(dest, 32)
@@ -135,11 +131,7 @@ library LibBytes {
                     // Note: the first check is always true,
                     // this could have been a do-while loop.
                     // solhint-disable-next-line no-empty-blocks
-                    for {
-
-                    } slt(dest, dEnd) {
-
-                    } {
+                    for {} slt(dest, dEnd) {} {
                         mstore(dEnd, mload(sEnd))
                         sEnd := sub(sEnd, 32)
                         dEnd := sub(dEnd, 32)
@@ -280,10 +272,8 @@ library LibBytes {
             // 1. Add index to address of bytes array
             // 2. Load 32-byte word from memory
             // 3. Apply 12-byte mask to obtain extra bytes occupying word of memory where we'll store the address
-            let neighbors := and(
-                mload(add(b, index)),
-                0xffffffffffffffffffffffff0000000000000000000000000000000000000000
-            )
+            let neighbors :=
+                and(mload(add(b, index)), 0xffffffffffffffffffffffff0000000000000000000000000000000000000000)
 
             // Make sure input address is clean.
             // (Solidity does not guarantee this)

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import { ICollectionFactory } from "../interfaces/ICollectionFactory.sol";
-import { ICollection } from "../interfaces/ICollection.sol";
-import { ICollectionCloneable } from "../interfaces/ICollectionCloneable.sol";
-import { IOwnable } from "../interfaces/IOwnable.sol";
-import { IHashes } from "../interfaces/IHashes.sol";
-import { LibClone } from "../lib/LibClone.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import {ICollectionFactory} from "../interfaces/ICollectionFactory.sol";
+import {ICollection} from "../interfaces/ICollection.sol";
+import {ICollectionCloneable} from "../interfaces/ICollectionCloneable.sol";
+import {IOwnable} from "../interfaces/IOwnable.sol";
+import {IHashes} from "../interfaces/IHashes.sol";
+import {LibClone} from "../lib/LibClone.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title CollectionFactory
@@ -61,9 +61,7 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
 
     /// @notice CollectionCreated Emitted when a Collection is created.
     event CollectionCreated(
-        address indexed implementationAddress,
-        address indexed collectionAddress,
-        address indexed creator
+        address indexed implementationAddress, address indexed collectionAddress, address indexed creator
     );
 
     /// @notice FactoryMaintainerAddressSet Emitted when the factory maintainer address is set.
@@ -107,11 +105,10 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
      * @param _implementationAddress The address of the Collection contract.
      * @param _cloneable Whether this implementation address is cloneable.
      */
-    function addImplementationAddress(
-        bytes32 _hashedEcosystemName,
-        address _implementationAddress,
-        bool _cloneable
-    ) external override {
+    function addImplementationAddress(bytes32 _hashedEcosystemName, address _implementationAddress, bool _cloneable)
+        external
+        override
+    {
         require(ecosystemSettings[_hashedEcosystemName].length > 0, "CollectionFactory: ecosystem doesn't exist");
         CollectionContracts storage collection = collections[_implementationAddress];
         require(!collection.exists, "CollectionFactory: implementation address already exists");
@@ -119,9 +116,8 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
 
         uint64 blockNumber = safe64(block.number, "CollectionFactory: exceeds 64 bits.");
         require(
-            ICollection(_implementationAddress).verifyEcosystemSettings(
-                getCheckpointedSettings(ecosystemSettings[_hashedEcosystemName], blockNumber)
-            ),
+            ICollection(_implementationAddress)
+                .verifyEcosystemSettings(getCheckpointedSettings(ecosystemSettings[_hashedEcosystemName], blockNumber)),
             "CollectionFactory: implementation address doesn't properly validate ecosystem settings"
         );
 
@@ -139,10 +135,11 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
      * @param _initializationData The abi encoded initialization data which is consumable
      *        by the implementation contract in its initialize function.
      */
-    function createCollection(
-        address _implementationAddress,
-        bytes memory _initializationData
-    ) external override nonReentrant {
+    function createCollection(address _implementationAddress, bytes memory _initializationData)
+        external
+        override
+        nonReentrant
+    {
         CollectionContracts storage collection = collections[_implementationAddress];
         require(collection.exists, "CollectionFactory: implementation address not found.");
         require(collection.cloneable, "CollectionFactory: implementation address is not cloneable.");
@@ -159,9 +156,11 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
      * @notice This function sets the factory maintainer address.
      * @param _factoryMaintainerAddress The address of the factory maintainer.
      */
-    function setFactoryMaintainerAddress(
-        address _factoryMaintainerAddress
-    ) external override onlyOwnerOrFactoryMaintainer {
+    function setFactoryMaintainerAddress(address _factoryMaintainerAddress)
+        external
+        override
+        onlyOwnerOrFactoryMaintainer
+    {
         factoryMaintainerAddress = _factoryMaintainerAddress;
         emit FactoryMaintainerAddressSet(_factoryMaintainerAddress);
     }
@@ -180,8 +179,8 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
         uint256[] memory _indexes
     ) external override onlyOwnerOrFactoryMaintainer {
         require(
-            _hashedEcosystemNames.length == _implementationAddressesToRemove.length &&
-                _hashedEcosystemNames.length == _indexes.length,
+            _hashedEcosystemNames.length == _implementationAddressesToRemove.length
+                && _hashedEcosystemNames.length == _indexes.length,
             "CollectionFactory: arrays provided must be the same length"
         );
 
@@ -226,11 +225,11 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
      * @param _collectionAddress The cloned collection address to be removed.
      * @param _index The array index to be removed. This is provided to reduce the cost of removal.
      */
-    function removeCollection(
-        address _implementationAddress,
-        address _collectionAddress,
-        uint256 _index
-    ) external override onlyOwnerOrFactoryMaintainer {
+    function removeCollection(address _implementationAddress, address _collectionAddress, uint256 _index)
+        external
+        override
+        onlyOwnerOrFactoryMaintainer
+    {
         CollectionContracts storage collection = collections[_implementationAddress];
         require(collection.exists, "CollectionFactory: implementation address not found.");
         require(_index < collection.contractAddresses.length, "CollectionFactory: array index out of bounds.");
@@ -255,10 +254,11 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
      * @param _settings The ABI encoded settings data which can be decoded by implementation
      *        contracts which consume this ecosystem.
      */
-    function createEcosystemSettings(
-        string memory _ecosystemName,
-        bytes memory _settings
-    ) external override onlyOwnerOrFactoryMaintainer {
+    function createEcosystemSettings(string memory _ecosystemName, bytes memory _settings)
+        external
+        override
+        onlyOwnerOrFactoryMaintainer
+    {
         bytes32 hashedEcosystemName = keccak256(abi.encodePacked(_ecosystemName));
         require(
             ecosystemSettings[hashedEcosystemName].length == 0,
@@ -266,7 +266,7 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
         );
 
         uint64 blockNumber = safe64(block.number, "CollectionFactory: exceeds 64 bits.");
-        ecosystemSettings[hashedEcosystemName].push(SettingsCheckpoint({ id: blockNumber, settings: _settings }));
+        ecosystemSettings[hashedEcosystemName].push(SettingsCheckpoint({id: blockNumber, settings: _settings}));
 
         ecosystems.push(hashedEcosystemName);
 
@@ -296,7 +296,7 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
         );
 
         uint64 blockNumber = safe64(block.number, "CollectionFactory: exceeds 64 bits.");
-        ecosystemSettings[_hashedEcosystemName].push(SettingsCheckpoint({ id: blockNumber, settings: _settings }));
+        ecosystemSettings[_hashedEcosystemName].push(SettingsCheckpoint({id: blockNumber, settings: _settings}));
 
         emit EcosystemSettingsUpdated(_hashedEcosystemName, _settings);
     }
@@ -307,10 +307,12 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
      * @param _blockNumber The block number in which the new Collection was initialized. This is
      *        used to determine which settings were active at the time of Collection creation.
      */
-    function getEcosystemSettings(
-        bytes32 _hashedEcosystemName,
-        uint64 _blockNumber
-    ) external view override returns (bytes memory) {
+    function getEcosystemSettings(bytes32 _hashedEcosystemName, uint64 _blockNumber)
+        external
+        view
+        override
+        returns (bytes memory)
+    {
         require(ecosystemSettings[_hashedEcosystemName].length > 0, "CollectionFactory: ecosystem settings not found");
 
         return getCheckpointedSettings(ecosystemSettings[_hashedEcosystemName], _blockNumber);
@@ -335,18 +337,18 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
      * @param _end The array end index (exclusive).
      * @return An array of Collection addresses.
      */
-    function getCollections(
-        address _implementationAddress,
-        uint256 _start,
-        uint256 _end
-    ) external view override returns (address[] memory) {
+    function getCollections(address _implementationAddress, uint256 _start, uint256 _end)
+        external
+        view
+        override
+        returns (address[] memory)
+    {
         CollectionContracts storage collection = collections[_implementationAddress];
 
         require(collection.exists, "CollectionFactory: implementation address not found.");
         require(
-            _start < collection.contractAddresses.length &&
-                _end <= collection.contractAddresses.length &&
-                _end > _start,
+            _start < collection.contractAddresses.length && _end <= collection.contractAddresses.length
+                && _end > _start,
             "CollectionFactory: Array indices out of bounds"
         );
 
@@ -389,9 +391,12 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
      * @param _hashedEcosystemName The ecosystem to fetch implementation addresses from.
      * @return Array of Hashes Collection implementation addresses.
      */
-    function getImplementationAddresses(
-        bytes32 _hashedEcosystemName
-    ) external view override returns (address[] memory) {
+    function getImplementationAddresses(bytes32 _hashedEcosystemName)
+        external
+        view
+        override
+        returns (address[] memory)
+    {
         require(ecosystemSettings[_hashedEcosystemName].length > 0, "CollectionFactory: ecosystem doesn't exist");
         return implementationAddresses[_hashedEcosystemName];
     }
@@ -403,16 +408,16 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
      * @param _end The array end index (exclusive).
      * @return Array of Hashes Collection implementation addresses.
      */
-    function getImplementationAddresses(
-        bytes32 _hashedEcosystemName,
-        uint256 _start,
-        uint256 _end
-    ) external view override returns (address[] memory) {
+    function getImplementationAddresses(bytes32 _hashedEcosystemName, uint256 _start, uint256 _end)
+        external
+        view
+        override
+        returns (address[] memory)
+    {
         require(ecosystemSettings[_hashedEcosystemName].length > 0, "CollectionFactory: ecosystem doesn't exist");
         require(
-            _start < implementationAddresses[_hashedEcosystemName].length &&
-                _end <= implementationAddresses[_hashedEcosystemName].length &&
-                _end > _start,
+            _start < implementationAddresses[_hashedEcosystemName].length
+                && _end <= implementationAddresses[_hashedEcosystemName].length && _end > _start,
             "CollectionFactory: Array indices out of bounds"
         );
 
@@ -423,18 +428,19 @@ contract CollectionFactory is ICollectionFactory, Ownable, ReentrancyGuard {
         return _implementationAddresses;
     }
 
-    function getCheckpointedSettings(
-        SettingsCheckpoint[] storage _settingsCheckpoints,
-        uint64 _blockNumber
-    ) private view returns (bytes storage) {
+    function getCheckpointedSettings(SettingsCheckpoint[] storage _settingsCheckpoints, uint64 _blockNumber)
+        private
+        view
+        returns (bytes storage)
+    {
         require(
-            _blockNumber >= _settingsCheckpoints[0].id,
-            "CollectionFactory: Block number before first settings block"
+            _blockNumber >= _settingsCheckpoints[0].id, "CollectionFactory: Block number before first settings block"
         );
 
         // If blocknumber greater than highest checkpoint, just return the latest checkpoint
-        if (_blockNumber >= _settingsCheckpoints[_settingsCheckpoints.length - 1].id)
+        if (_blockNumber >= _settingsCheckpoints[_settingsCheckpoints.length - 1].id) {
             return _settingsCheckpoints[_settingsCheckpoints.length - 1].settings;
+        }
 
         // Binary search for the matching checkpoint
         uint256 min = 0;

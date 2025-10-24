@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.6;
 
-import { LibEIP712 } from "./LibEIP712.sol";
+import {LibEIP712} from "./LibEIP712.sol";
 
 library LibVoteCast {
     struct VoteCast {
@@ -26,10 +26,11 @@ library LibVoteCast {
     /// @param _voteCast The vote cast structure.
     /// @param _eip712DomainHash The hash of the EIP712 domain.
     /// @return voteCastHash Keccak-256 EIP712 hash of the vote cast.
-    function getVoteCastHash(
-        VoteCast memory _voteCast,
-        bytes32 _eip712DomainHash
-    ) internal pure returns (bytes32 voteCastHash) {
+    function getVoteCastHash(VoteCast memory _voteCast, bytes32 _eip712DomainHash)
+        internal
+        pure
+        returns (bytes32 voteCastHash)
+    {
         voteCastHash = LibEIP712.hashEIP712Message(_eip712DomainHash, hashVoteCast(_voteCast));
         return voteCastHash;
     }

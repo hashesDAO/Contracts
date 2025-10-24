@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import { ICollectionNFTEligibilityPredicate } from "../../interfaces/ICollectionNFTEligibilityPredicate.sol";
-import { IHashes } from "../../interfaces/IHashes.sol";
-import { ICollection } from "../../interfaces/ICollection.sol";
+import {ICollectionNFTEligibilityPredicate} from "../../interfaces/ICollectionNFTEligibilityPredicate.sol";
+import {IHashes} from "../../interfaces/IHashes.sol";
+import {ICollection} from "../../interfaces/ICollection.sol";
 
 /**
  * @title  DAOHashesEligibilityPredicate

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { ICollectionNFTEligibilityPredicate } from "../../interfaces/ICollectionNFTEligibilityPredicate.sol";
-import { ICollectionNFTMintFeePredicate } from "../../interfaces/ICollectionNFTMintFeePredicate.sol";
-import { IHashes } from "../../interfaces/IHashes.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ICollectionNFTEligibilityPredicate} from "../../interfaces/ICollectionNFTEligibilityPredicate.sol";
+import {ICollectionNFTMintFeePredicate} from "../../interfaces/ICollectionNFTMintFeePredicate.sol";
+import {IHashes} from "../../interfaces/IHashes.sol";
 
 contract MedleyLimitedEditionPredicates is Ownable, ICollectionNFTEligibilityPredicate, ICollectionNFTMintFeePredicate {
     enum RolloutState {
@@ -68,9 +68,9 @@ contract MedleyLimitedEditionPredicates is Ownable, ICollectionNFTEligibilityPre
             return _tokenId < 15 && preSeasonAllowlist[_hashesTokenId];
         }
         if (currentRolloutState == RolloutState.DAOHashesPreSeason) {
-            return
-                _tokenId < 15 &&
-                ((_hashesTokenId < 1000 && !hashes.deactivated(_hashesTokenId)) || preSeasonAllowlist[_hashesTokenId]);
+            return _tokenId < 15
+                && ((_hashesTokenId < 1000 && !hashes.deactivated(_hashesTokenId))
+                    || preSeasonAllowlist[_hashesTokenId]);
         }
         if (currentRolloutState == RolloutState.AllHashesPreSeason) {
             return _tokenId < 15;

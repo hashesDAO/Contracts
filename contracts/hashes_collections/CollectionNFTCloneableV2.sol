@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import { ICollectionFactory } from "../interfaces/ICollectionFactory.sol";
-import { ICollection } from "../interfaces/ICollection.sol";
-import { ICollectionCloneable } from "../interfaces/ICollectionCloneable.sol";
-import { ICollectionNFTCloneableV2 } from "../interfaces/ICollectionNFTCloneableV2.sol";
-import { ICollectionNFTEligibilityPredicate } from "../interfaces/ICollectionNFTEligibilityPredicate.sol";
-import { ICollectionNFTMintFeePredicate } from "../interfaces/ICollectionNFTMintFeePredicate.sol";
-import { ICollectionNFTTokenURIPredicate } from "../interfaces/ICollectionNFTTokenURIPredicate.sol";
-import { IERC2981Royalties } from "../interfaces/IERC2981Royalties.sol";
-import { IHashes } from "../interfaces/IHashes.sol";
-import { IOwnable } from "../interfaces/IOwnable.sol";
-import { OwnableCloneable } from "./OwnableCloneable.sol";
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import { SafeMath } from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {ICollectionFactory} from "../interfaces/ICollectionFactory.sol";
+import {ICollection} from "../interfaces/ICollection.sol";
+import {ICollectionCloneable} from "../interfaces/ICollectionCloneable.sol";
+import {ICollectionNFTCloneableV2} from "../interfaces/ICollectionNFTCloneableV2.sol";
+import {ICollectionNFTEligibilityPredicate} from "../interfaces/ICollectionNFTEligibilityPredicate.sol";
+import {ICollectionNFTMintFeePredicate} from "../interfaces/ICollectionNFTMintFeePredicate.sol";
+import {ICollectionNFTTokenURIPredicate} from "../interfaces/ICollectionNFTTokenURIPredicate.sol";
+import {IERC2981Royalties} from "../interfaces/IERC2981Royalties.sol";
+import {IHashes} from "../interfaces/IHashes.sol";
+import {IOwnable} from "../interfaces/IOwnable.sol";
+import {OwnableCloneable} from "./OwnableCloneable.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract CollectionNFTCloneableV2 is
     ICollection,
@@ -191,10 +191,8 @@ contract CollectionNFTCloneableV2 is
             uint16 _settingsMaximumCollectionRoyaltyPercent
         ) = abi.decode(_settings, (uint16, uint16, uint16));
 
-        return
-            _settingsHashesDAOMintFeePercent <= 10000 &&
-            _settingsHashesDAORoyaltyFeePercent <= 10000 &&
-            _settingsMaximumCollectionRoyaltyPercent <= 10000;
+        return _settingsHashesDAOMintFeePercent <= 10000 && _settingsHashesDAORoyaltyFeePercent <= 10000
+            && _settingsMaximumCollectionRoyaltyPercent <= 10000;
     }
 
     /**
@@ -253,15 +251,11 @@ contract CollectionNFTCloneableV2 is
         signatureBlockAddress = _initializerSettings.signatureBlockAddress;
 
         uint64 _initializationBlock = safe64(block.number, "CollectionNFTCloneableV2: exceeds 64 bits.");
-        bytes memory settingsBytes = ICollectionFactory(_msgSender()).getEcosystemSettings(
-            keccak256(abi.encodePacked("NFT_v1")),
-            _initializationBlock
-        );
+        bytes memory settingsBytes = ICollectionFactory(_msgSender())
+            .getEcosystemSettings(keccak256(abi.encodePacked("NFT_v1")), _initializationBlock);
 
-        (_hashesDAOMintFeePercent, _hashesDAORoyaltyFeePercent, _maximumCollectionRoyaltyPercent) = abi.decode(
-            settingsBytes,
-            (uint16, uint16, uint16)
-        );
+        (_hashesDAOMintFeePercent, _hashesDAORoyaltyFeePercent, _maximumCollectionRoyaltyPercent) =
+            abi.decode(settingsBytes, (uint16, uint16, uint16));
 
         require(
             royaltyBps <= _maximumCollectionRoyaltyPercent,
@@ -291,12 +285,11 @@ contract CollectionNFTCloneableV2 is
         require(tokenCollectionIdToHashesIdMapping[tokenId].exists, "CollectionNFTCloneableV2: Invalid Token Id");
 
         //Pulls the token URI from the predicate contract
-        return
-            TokenURIPredicateContract.getTokenURI(
-                tokenId,
-                tokenCollectionIdToHashesIdMapping[tokenId].hashesId,
-                tokenCollectionIdToHashesIdMapping[tokenId].hashesHash
-            );
+        return TokenURIPredicateContract.getTokenURI(
+            tokenId,
+            tokenCollectionIdToHashesIdMapping[tokenId].hashesId,
+            tokenCollectionIdToHashesIdMapping[tokenId].hashesHash
+        );
     }
 
     /**
@@ -320,20 +313,16 @@ contract CollectionNFTCloneableV2 is
         );
 
         // get mint eligibility through static call
-        bool isHashesTokenIdEligibleToMint = mintEligibilityPredicateContract.isTokenEligibleToMint(
-            nonce,
-            _hashesTokenId
-        );
+        bool isHashesTokenIdEligibleToMint =
+            mintEligibilityPredicateContract.isTokenEligibleToMint(nonce, _hashesTokenId);
         require(isHashesTokenIdEligibleToMint, "CollectionNFTCloneableV2: supplied token ID is ineligible to mint");
 
         // get mint fee through static call
         uint256 currentMintFee = mintFeePredicateContract.getTokenMintFee(nonce, _hashesTokenId);
         require(msg.value >= currentMintFee, "CollectionNFTCloneableV2: must pass sufficient mint fee.");
 
-        hashesIdToCollectionTokenIdMapping[_hashesTokenId] = TokenIdEntry({
-            exists: true,
-            tokenId: safe128(nonce, "CollectionNFTCloneableV2: exceeds 128 bits.")
-        });
+        hashesIdToCollectionTokenIdMapping[_hashesTokenId] =
+            TokenIdEntry({exists: true, tokenId: safe128(nonce, "CollectionNFTCloneableV2: exceeds 128 bits.")});
 
         uint256 feeForHashesDAO = (currentMintFee.mul(_hashesDAOMintFeePercent)) / 10000;
         uint256 authorFee = currentMintFee.sub(feeForHashesDAO);
@@ -343,7 +332,7 @@ contract CollectionNFTCloneableV2 is
             // If the minting fee is non-zero
             mintFeePaid = mintFeePaid.add(authorFee);
 
-            (bool sent, ) = creatorAddress.call{ value: authorFee }("");
+            (bool sent,) = creatorAddress.call{value: authorFee}("");
             require(sent, "CollectionNFTCloneableV2: failed to send ETH to creator address");
         }
 
@@ -352,7 +341,7 @@ contract CollectionNFTCloneableV2 is
             // If the hashes DAO minting fee is non-zero
 
             // Send minting tax to HashesDAO
-            (bool sent, ) = IOwnable(address(hashesToken)).owner().call{ value: feeForHashesDAO }("");
+            (bool sent,) = IOwnable(address(hashesToken)).owner().call{value: feeForHashesDAO}("");
             require(sent, "CollectionNFTCloneableV2: failed to send ETH to HashesDAO");
 
             mintFeePaid = mintFeePaid.add(feeForHashesDAO);
@@ -364,7 +353,7 @@ contract CollectionNFTCloneableV2 is
 
             // Refund the remaining ether balance to the sender. Since there are no
             // other payable functions, this remainder will always be the senders.
-            (bool sent, ) = _msgSender().call{ value: msg.value.sub(mintFeePaid) }("");
+            (bool sent,) = _msgSender().call{value: msg.value.sub(mintFeePaid)}("");
             require(sent, "CollectionNFTCloneableV2: failed to refund ETH.");
         }
 
@@ -374,11 +363,8 @@ contract CollectionNFTCloneableV2 is
 
         // map collection NFT id to the minting hashes id
         // this is important for the draw function
-        tokenCollectionIdToHashesIdMapping[nonce] = idToHash({
-            exists: true,
-            hashesId: _hashesTokenId,
-            hashesHash: _hashesHash
-        });
+        tokenCollectionIdToHashesIdMapping[nonce] =
+            idToHash({exists: true, hashesId: _hashesTokenId, hashesHash: _hashesHash});
 
         _safeMint(_msgSender(), nonce++);
 
@@ -391,8 +377,7 @@ contract CollectionNFTCloneableV2 is
      */
     function burn(uint256 _tokenId) external override initialized {
         require(
-            _isApprovedOrOwner(_msgSender(), _tokenId),
-            "CollectionNFTCloneableV2: caller is not owner nor approved."
+            _isApprovedOrOwner(_msgSender(), _tokenId), "CollectionNFTCloneableV2: caller is not owner nor approved."
         );
         _burn(_tokenId);
 
@@ -407,8 +392,7 @@ contract CollectionNFTCloneableV2 is
     function completeSignatureBlock() external override initialized {
         require(!isSignatureBlockCompleted, "CollectionNFTCloneableV2: signature block has already been completed");
         require(
-            signatureBlockAddress != address(0),
-            "CollectionNFTCloneableV2: signature block address has not been set."
+            signatureBlockAddress != address(0), "CollectionNFTCloneableV2: signature block address has not been set."
         );
         require(
             _msgSender() == signatureBlockAddress,
@@ -420,10 +404,12 @@ contract CollectionNFTCloneableV2 is
     }
 
     /// @inheritdoc IERC2981Royalties
-    function royaltyInfo(
-        uint256,
-        uint256 value
-    ) external view override returns (address receiver, uint256 royaltyAmount) {
+    function royaltyInfo(uint256, uint256 value)
+        external
+        view
+        override
+        returns (address receiver, uint256 royaltyAmount)
+    {
         // Send royalties to this contract address. Note: this will only work for
         // marketplaces which implement the ERC2981 royalty standard. Off-chain
         // configuration may be required for certain marketplaces.
@@ -502,12 +488,12 @@ contract CollectionNFTCloneableV2 is
         uint256 _creatorRoyaltiesOwed = _contractBalance.sub(_daoRoyaltiesOwed);
 
         if (_creatorRoyaltiesOwed > 0) {
-            (bool sent, ) = creatorAddress.call{ value: _creatorRoyaltiesOwed }("");
+            (bool sent,) = creatorAddress.call{value: _creatorRoyaltiesOwed}("");
             require(sent, "CollectionNFTCloneableV2: failed to send ETH to creator address");
         }
 
         if (_daoRoyaltiesOwed > 0) {
-            (bool sent, ) = IOwnable(address(hashesToken)).owner().call{ value: _daoRoyaltiesOwed }("");
+            (bool sent,) = IOwnable(address(hashesToken)).owner().call{value: _daoRoyaltiesOwed}("");
             require(sent, "CollectionNFTCloneableV2: failed to send ETH to HashesDAO");
         }
 

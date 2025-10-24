@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import { ICollectionCloneable } from "../../interfaces/ICollectionCloneable.sol";
-import { ICollectionNFTMintFeePredicate } from "../../interfaces/ICollectionNFTMintFeePredicate.sol";
-import { ICollection } from "../../interfaces/ICollection.sol";
-import { IHashes } from "../../interfaces/IHashes.sol";
+import {ICollectionCloneable} from "../../interfaces/ICollectionCloneable.sol";
+import {ICollectionNFTMintFeePredicate} from "../../interfaces/ICollectionNFTMintFeePredicate.sol";
+import {ICollection} from "../../interfaces/ICollection.sol";
+import {IHashes} from "../../interfaces/IHashes.sol";
 
 /**
  * @title  StaticMintFeePredicateCloneable

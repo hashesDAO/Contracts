@@ -1,30 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import {Hashes} from "./Hashes.sol";
+import {Hashes} from "contracts/Hashes.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-/// @title Hashes Redemption 
+/// @title Hashes Redemption
 /// @author Cooki
 /// @notice This contract implements a staged redemption process for the Hashes DAO. Eligible DAO Hash owners can redeem their
-/// NFTs to redeem an initial pro rata share of the deposited Wrapped ETH. Following the initial redemption period, a post 
+/// NFTs to redeem an initial pro rata share of the deposited Wrapped ETH. Following the initial redemption period, a post
 /// redempion period can begin, wherein those users who redeemed their NFTs during the redemption period can redeem a pro rata
 /// share of the remaining funds. The stages are as follows:
 /// PreRedemption:  Redemptions have not begun; the multisig owner must deposit the DAO's Wrapped ETH via the setRedemptionStage()
 ///                 function to move the contract to the redemption stage.
 /// Redemption:     Redemptions have begun, and all eligible DAO hash owners can redeem their NFTs using the redeem() function.
-///                 After the MINREDEMPTIONTIME (180 days) has expired, the multisig owner can move the contract to the post 
+///                 After the MINREDEMPTIONTIME (180 days) has expired, the multisig owner can move the contract to the post
 ///                 redemption stage via the setPostRedemptionStage() function.
-/// PostRedemption: Post redemptions of the remaining WETH have begun. Users who successfully redeemed their DAO hashes during the 
+/// PostRedemption: Post redemptions of the remaining WETH have begun. Users who successfully redeemed their DAO hashes during the
 ///                 redemption stage can claim the remaining post redemption amount that is in proportion to the number of DAO
 ///                 hashes they initially redeemed.
 /// @dev This contract must be deployed to Ethereum mainnet
 contract Redemption is Ownable, ReentrancyGuard {
     /// CONSTANTS ///
-
     /// @notice Wrapped ETH
     ERC20 public constant WETH = ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
@@ -39,17 +38,17 @@ contract Redemption is Ownable, ReentrancyGuard {
 
     /// @notice Minimum time that the redemption stage must last before it is possible enable the post redemption stage
     uint256 public constant MINREDEMPTIONTIME = 180 days;
-    
+
     /// @notice The initial number of eligible hashes used in the pro-rata redemption calculation
     /// @dev 1000 DAO hashes - (100 Dex labs hashes + 15 deactivated hashes + 67 bought back hashes)
     uint256 public constant INITIALNUMBEROFELIGIBLEHASHES = 818;
-    
+
     /// VARIABLES ///
 
     /// @notice The current stage of the contract
     /// @dev Stages: PreRedemption -> Redemption -> PostRedemption
     Stages public stage;
-    
+
     /// @notice The timestamp of when the redeption stage was set
     uint256 public redemptionSetTime;
 
@@ -61,7 +60,7 @@ contract Redemption is Ownable, ReentrancyGuard {
 
     /// @notice Total number of DAO hashes redeemed during redemption stage
     uint256 public totalNumberRedeemed;
-    
+
     /// @notice The number of DAO hashes any address has redeemed during the redemption stage
     mapping(address => uint256) public amountRedeemed;
 
@@ -98,8 +97,10 @@ contract Redemption is Ownable, ReentrancyGuard {
         for (uint256 i; i < length; i++) {
             tokenId = _tokenIds[i];
             require(
-                isHashEligibleForRedemption(tokenId), 
-                string(abi.encodePacked('Redemption: Hash with token Id #', Strings.toString(tokenId), ' is ineligible'))
+                isHashEligibleForRedemption(tokenId),
+                string(
+                    abi.encodePacked("Redemption: Hash with token Id #", Strings.toString(tokenId), " is ineligible")
+                )
             );
             HASHES.transferFrom(msg.sender, address(this), tokenId);
         }
@@ -132,7 +133,7 @@ contract Redemption is Ownable, ReentrancyGuard {
         require(stage == Stages.PreRedemption, "Redemption: Must be in pre-redemption stage");
         require(
             _amount >= MINDEPOSITAMOUNT * 10 ** WETH.decimals(),
-            string(abi.encodePacked('Redemption: Must deposit at least ', Strings.toString(MINDEPOSITAMOUNT), ' WETH'))
+            string(abi.encodePacked("Redemption: Must deposit at least ", Strings.toString(MINDEPOSITAMOUNT), " WETH"))
         );
 
         WETH.transferFrom(msg.sender, address(this), _amount);
@@ -166,10 +167,10 @@ contract Redemption is Ownable, ReentrancyGuard {
     /// @param _tokenId The token Id of hash to be checked if eligible for redemption
     /// @return A boolean; true if eligible, false if not
     function isHashEligibleForRedemption(uint256 _tokenId) public view returns (bool) {
-        if (_tokenId >= 1000) return false;             /// Non-DAO hash
-        if (_tokenId < 100) return false;               /// Dex Labs hash
+        if (_tokenId >= 1000) return false; /// Non-DAO hash
+        if (_tokenId < 100) return false; /// Dex Labs hash
         if (HASHES.deactivated(_tokenId)) return false; /// Deactivated hash
-        if (hashOwnedByDAO[_tokenId]) return false;     /// DAO-owned hash
+        if (hashOwnedByDAO[_tokenId]) return false; /// DAO-owned hash
         return true;
     }
 

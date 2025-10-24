@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import { ICollection } from "../interfaces/ICollection.sol";
-import { ICollectionCloneable } from "../interfaces/ICollectionCloneable.sol";
-import { ICollectionNFTCloneableV1 } from "../interfaces/ICollectionNFTCloneableV1.sol";
-import { IHashes } from "../interfaces/IHashes.sol";
-import { OwnableCloneable } from "./OwnableCloneable.sol";
-import { PaymentSplitterCloneable } from "./PaymentSplitterCloneable.sol";
+import {ICollection} from "../interfaces/ICollection.sol";
+import {ICollectionCloneable} from "../interfaces/ICollectionCloneable.sol";
+import {ICollectionNFTCloneableV1} from "../interfaces/ICollectionNFTCloneableV1.sol";
+import {IHashes} from "../interfaces/IHashes.sol";
+import {OwnableCloneable} from "./OwnableCloneable.sol";
+import {PaymentSplitterCloneable} from "./PaymentSplitterCloneable.sol";
 
 /**
  * @title CollectionPaymentSplitterCloneable
@@ -52,12 +52,10 @@ contract CollectionPaymentSplitterCloneable is
      *        'address[]' payees - Addresses of the payees for this payment splitter (the shareholders).
      *        'uint256[]' shares - The payment splitter share amounts corresponding to the payees.
      */
-    function initialize(
-        IHashes,
-        address,
-        address _createCollectionCaller,
-        bytes memory _initializationData
-    ) external override {
+    function initialize(IHashes, address, address _createCollectionCaller, bytes memory _initializationData)
+        external
+        override
+    {
         require(!_initialized, "CollectionPaymentSplitter: already initialized.");
 
         initializeOwnership(_createCollectionCaller);
@@ -74,10 +72,11 @@ contract CollectionPaymentSplitterCloneable is
      * @notice Function for setting the baseTokenURI on the associated Collection.
      * @param _baseTokenURI The base token URI.
      */
-    function setBaseTokenURI(
-        ICollectionNFTCloneableV1 collection,
-        string memory _baseTokenURI
-    ) external initialized onlyOwner {
+    function setBaseTokenURI(ICollectionNFTCloneableV1 collection, string memory _baseTokenURI)
+        external
+        initialized
+        onlyOwner
+    {
         collection.setBaseTokenURI(_baseTokenURI);
     }
 
@@ -93,10 +92,11 @@ contract CollectionPaymentSplitterCloneable is
      * @notice Function for transfering the creator address on the associated Hashes Collection.
      * @param _creatorAddress The creator address.
      */
-    function transferCreator(
-        ICollectionNFTCloneableV1 collection,
-        address _creatorAddress
-    ) external initialized onlyOwner {
+    function transferCreator(ICollectionNFTCloneableV1 collection, address _creatorAddress)
+        external
+        initialized
+        onlyOwner
+    {
         collection.transferCreator(_creatorAddress);
     }
 }

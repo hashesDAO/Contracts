@@ -1,27 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-/// NOTE This is a template/example test contract that can be used to fork Ethereum Mainnet and test integrations 
+/// NOTE This is a template/example test contract that can be used to fork Ethereum Mainnet and test integrations
 /// with the already deployed Hashes DAO smart contracts.
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import {Test} from "forge-std/Test.sol";
+import {console} from "forge-std/console.sol";
 
 /// Utils
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// DAO
-import {Hashes} from "../contracts/Hashes.sol";
-import {HashesDAO} from "../contracts/HashesDAO.sol";
+import {Hashes} from "contracts/Hashes.sol";
+import {HashesDAO} from "contracts/HashesDAO.sol";
 
 /// Factory
-import {CollectionFactory} from "../contracts/hashes_collections/CollectionFactory.sol";
+import {CollectionFactory} from "contracts/hashes_collections/CollectionFactory.sol";
 /// Implementations
-import {CollectionNFTCloneableV1} from "../contracts/hashes_collections/CollectionNFTCloneableV1.sol";
-import {CollectionNFTCloneableV2} from "../contracts/hashes_collections/CollectionNFTCloneableV2.sol";
+import {CollectionNFTCloneableV1} from "contracts/hashes_collections/CollectionNFTCloneableV1.sol";
+import {CollectionNFTCloneableV2} from "contracts/hashes_collections/CollectionNFTCloneableV2.sol";
 /// Predicates
-import {CollectionPaymentSplitterCloneable} from "../contracts/hashes_collections/CollectionPaymentSplitterCloneable.sol";
-import {MultiStageAllowlistCloneable} from "../contracts/hashes_collections/MultiStageAllowlistCloneable.sol";
-import {PaymentSplitterCloneable} from "../contracts/hashes_collections/PaymentSplitterCloneable.sol";
+import {CollectionPaymentSplitterCloneable} from "contracts/hashes_collections/CollectionPaymentSplitterCloneable.sol";
+import {MultiStageAllowlistCloneable} from "contracts/hashes_collections/MultiStageAllowlistCloneable.sol";
+import {PaymentSplitterCloneable} from "contracts/hashes_collections/PaymentSplitterCloneable.sol";
 
 contract HashesFork is Test {
     ERC20 public WETH;
@@ -51,7 +51,8 @@ contract HashesFork is Test {
         collectionFactory = CollectionFactory(0x86cF8621b3ee3EB77D7EFFE9Dc677D1CD39E9Ce5);
         collectionNFTCloneableV1 = CollectionNFTCloneableV1(payable(0xE023e03Dca09E3e467251d29057cfd2CcDd797A9));
         collectionNFTCloneableV2 = CollectionNFTCloneableV2(payable(0x9b43aE24542C548341C3bb24aDe8D22f59C92ae6));
-        collectionPaymentSplitterCloneable = CollectionPaymentSplitterCloneable(payable(0x719d437A3525012D6fdafc9db3159CeC57adba37));
+        collectionPaymentSplitterCloneable =
+            CollectionPaymentSplitterCloneable(payable(0x719d437A3525012D6fdafc9db3159CeC57adba37));
         multiStageAllowlistCloneable = MultiStageAllowlistCloneable(0xE53c5FcE669d16F61204C1ae0DBD699085d07CC9);
         paymentSplitterCloneable = PaymentSplitterCloneable(payable(0x719d437A3525012D6fdafc9db3159CeC57adba37));
 
@@ -65,36 +66,30 @@ contract HashesFork is Test {
     function testWithdrawWETHFromDAO() public {
         vm.startPrank(hashesDeployer);
 
-        uint256 wethAmount = 10e18;
-        uint256 hashesDeployerBalanceBefore = WETH.balanceOf(hashesDeployer);
+        uint256 ethAmount = 10e18;
+        uint256 hashesDeployerBalanceBefore = address(hashesDeployer).balance;
 
         /// Create Proposal
         address[] memory targets = new address[](1);
-        targets[0] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        targets[0] = hashesDeployer;
 
         uint256[] memory amounts = new uint256[](1);
-        amounts[0] = 0;
+        amounts[0] = ethAmount;
 
         string[] memory signatures = new string[](1);
-        signatures[0] = 'transfer(address,uint256)';
+        signatures[0] = "call()";
 
         bytes[] memory callData = new bytes[](1);
-        callData[0] = abi.encodePacked([hashesDeployer], [wethAmount]);
+        callData[0] = "";
 
-        hashesDAO.propose(
-            targets,
-            amounts,
-            signatures,
-            callData,
-            'Withdraw WETH Test'
-        );
+        hashesDAO.propose(targets, amounts, signatures, callData, "Withdraw ETH Test");
 
         vm.roll(block.number + 2);
 
         /// Vote
         uint128 proposalId = hashesDAO.getProposalCount();
 
-        hashesDAO.castVote(proposalId, true, false, '0x');
+        hashesDAO.castVote(proposalId, true, false, "0x");
 
         vm.roll(block.number + 17820);
 
@@ -106,10 +101,10 @@ contract HashesFork is Test {
         /// Execute
         hashesDAO.execute(proposalId);
 
-        uint256 hashesDeployerBalanceAfter = WETH.balanceOf(hashesDeployer);
+        uint256 hashesDeployerBalanceAfter = address(hashesDeployer).balance;
 
         /// Checks
-        assertEq(hashesDeployerBalanceAfter, hashesDeployerBalanceBefore + wethAmount);
+        assertEq(hashesDeployerBalanceAfter, hashesDeployerBalanceBefore + ethAmount);
 
         vm.stopPrank();
     }
@@ -134,25 +129,19 @@ contract HashesFork is Test {
         amounts[0] = 0;
 
         string[] memory signatures = new string[](1);
-        signatures[0] = 'transfer(address,uint256)';
+        signatures[0] = "transfer(address,uint256)";
 
         bytes[] memory callData = new bytes[](1);
         callData[0] = abi.encodePacked([hashesDeployer], [rethAmount]);
 
-        hashesDAO.propose(
-            targets,
-            amounts,
-            signatures,
-            callData,
-            'Withdraw WETH Test'
-        );
+        hashesDAO.propose(targets, amounts, signatures, callData, "Withdraw WETH Test");
 
         vm.roll(block.number + 2);
 
         /// Vote
         uint128 proposalId = hashesDAO.getProposalCount();
 
-        hashesDAO.castVote(proposalId, true, false, '0x');
+        hashesDAO.castVote(proposalId, true, false, "0x");
 
         vm.roll(block.number + 17820);
 

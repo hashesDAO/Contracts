@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.6;
 
-import { LibEIP712 } from "./LibEIP712.sol";
+import {LibEIP712} from "./LibEIP712.sol";
 
 library LibVeto {
     struct Veto {

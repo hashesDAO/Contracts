@@ -37,12 +37,11 @@ library LibEIP712 {
     /// @param version The EIP712 domain version.
     /// @param verifyingContract The EIP712 verifying contract.
     /// @return result EIP712 domain separator.
-    function hashEIP712Domain(
-        string memory name,
-        string memory version,
-        uint256 chainId,
-        address verifyingContract
-    ) internal pure returns (bytes32 result) {
+    function hashEIP712Domain(string memory name, string memory version, uint256 chainId, address verifyingContract)
+        internal
+        pure
+        returns (bytes32 result)
+    {
         bytes32 schemaHash = _EIP712_DOMAIN_SEPARATOR_SCHEMA_HASH;
 
         // Assembly for more efficient computing:
