@@ -39,9 +39,7 @@ contract HashesFork is Test {
     address public hashesDeployer; /// 100 DAO Hashes
 
     function setUp() public {
-        string memory rpcURL = vm.envString("RPC_URL");
-        uint256 mainnetFork = vm.createFork(rpcURL);
-        vm.selectFork(mainnetFork);
+        vm.selectFork(vm.createFork(vm.envString("RPC_URL")));
 
         WETH = ERC20(payable(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2));
 
