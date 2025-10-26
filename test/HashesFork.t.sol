@@ -20,7 +20,7 @@ import {CollectionNFTCloneableV1} from "contracts/hashes_collections/CollectionN
 import {CollectionNFTCloneableV2} from "contracts/hashes_collections/CollectionNFTCloneableV2.sol";
 /// Predicates
 import {CollectionPaymentSplitterCloneable} from "contracts/hashes_collections/CollectionPaymentSplitterCloneable.sol";
-import {MultiStageAllowlistCloneable} from "contracts/hashes_collections/MultiStageAllowlistCloneable.sol";
+import {MultiStageAllowlistCloneable} from "contracts/hashes_collections/MultistageAllowlistCloneable.sol";
 import {PaymentSplitterCloneable} from "contracts/hashes_collections/PaymentSplitterCloneable.sol";
 
 contract HashesFork is Test {
