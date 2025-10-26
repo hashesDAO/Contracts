@@ -40,11 +40,11 @@ contract RedemptionTests is Test, DeployRedemption {
         deactivatedHolder = address(0xAFcd6E3D6B8E87722eD8d5a598e811672A462a9d);
         daoWallet = address(0x391b4A553551606Bbd1CDee08A0fA31f8548F3DC);
 
-        vm.deal(redemptionMultisig, 350 ether);
+        vm.deal(redemptionMultisig, 325 ether);
         run();
 
         vm.startPrank(redemptionMultisig);
-        (bool s,) = address(redemption).call{value: 350 ether}("");
+        (bool s,) = address(redemption).call{value: 325 ether}("");
         require(s);
         redemption.setRedemptionStage();
         vm.stopPrank();

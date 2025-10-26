@@ -3,6 +3,8 @@ pragma solidity 0.8.6;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import {Hashes} from "contracts/Hashes.sol";
 import {IRedemption} from "contracts/redemption/IRedemption.sol";
 
@@ -11,7 +13,7 @@ contract Redemption is IRedemption, Ownable, ReentrancyGuard {
 
     uint256 public constant MIN_REDEMPTION_TIME = 180 days;
 
-    uint256 public constant INITIAL_ELIGIBLE_HASHES_TOTAL = 818;
+    uint256 public constant INITIAL_ELIGIBLE_HASHES_TOTAL = 520;
 
     Stages public stage;
 
@@ -32,17 +34,29 @@ contract Redemption is IRedemption, Ownable, ReentrancyGuard {
         for (uint256 i; i < length; i++) {
             excludedHashIDs[_excludedIds[i]] = true;
         }
+        emit StageSet(stage);
     }
 
-    receive() external payable {}
+    receive() external payable {
+        _deposit();
+    }
+
+    function deposit() external payable {
+        _deposit();
+    }
+
+    function _deposit() internal nonReentrant {
+        if (stage == Stages.PostRedemption) revert WrongStage();
+        emit Deposit(msg.sender, msg.value);
+    }
 
     function redeem() external nonReentrant {
         if (stage == Stages.PreRedemption) {
             revert WrongStage();
         } else if (stage == Stages.Redemption) {
-            uint256 balance = HASHES.balanceOf(msg.sender);
             uint256 tokenId;
             uint256 counter;
+            uint256 balance = HASHES.balanceOf(msg.sender);
             for (uint256 i; i < balance; i++) {
                 tokenId = HASHES.tokenOfOwnerByIndex(msg.sender, i);
                 if (isHashEligibleForRedemption(tokenId)) {
@@ -54,11 +68,13 @@ contract Redemption is IRedemption, Ownable, ReentrancyGuard {
             amountRedeemed[msg.sender] += counter;
             (bool success,) = address(msg.sender).call{value: counter * redemptionPerHash}("");
             if (!success) revert TransferFailed();
+            emit Redeemed(msg.sender, counter * redemptionPerHash);
         } else if (stage == Stages.PostRedemption) {
             uint256 amount = amountRedeemed[msg.sender];
             amountRedeemed[msg.sender] = 0;
             (bool success,) = address(msg.sender).call{value: amount * redemptionPerHash}("");
             if (!success) revert TransferFailed();
+            emit Redeemed(msg.sender, amount * redemptionPerHash);
         }
     }
 
@@ -66,16 +82,20 @@ contract Redemption is IRedemption, Ownable, ReentrancyGuard {
         if (stage != Stages.PreRedemption) revert WrongStage();
         stage = Stages.Redemption;
         redemptionSetTime = block.timestamp;
-        uint256 balance = address(this).balance;
-        redemptionPerHash = balance / INITIAL_ELIGIBLE_HASHES_TOTAL;
+        redemptionPerHash = address(this).balance / INITIAL_ELIGIBLE_HASHES_TOTAL;
+        emit StageSet(stage);
     }
 
     function setPostRedemptionStage() external onlyOwner nonReentrant {
         if (stage != Stages.Redemption) revert WrongStage();
         if (block.timestamp < redemptionSetTime + MIN_REDEMPTION_TIME) revert MinRedemptionTime();
         stage = Stages.PostRedemption;
-        uint256 balance = address(this).balance;
-        redemptionPerHash = balance / totalNumberRedeemed;
+        redemptionPerHash = address(this).balance / totalNumberRedeemed;
+        emit StageSet(stage);
+    }
+
+    function recoverERC20(IERC20 _token) external onlyOwner nonReentrant {
+        _token.transfer(msg.sender, _token.balanceOf(msg.sender));
     }
 
     function isHashEligibleForRedemption(uint256 _tokenId) public view returns (bool) {

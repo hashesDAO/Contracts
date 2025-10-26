@@ -15,4 +15,8 @@ interface IRedemption {
     error TransferFailed();
 
     error MinRedemptionTime();
+
+    event Deposit(address _user, uint256 _amount);
+    event Redeemed(address _user, uint256 _amount);
+    event StageSet(Stages _stage);
 }
