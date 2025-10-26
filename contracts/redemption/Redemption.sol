@@ -8,25 +8,42 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Hashes} from "contracts/Hashes.sol";
 import {IRedemption} from "contracts/redemption/IRedemption.sol";
 
+/// @title Redemption
+/// @notice Manages the redemption of Hashes tokens for ETH
+/// @dev This contract implements a three-stage redemption system for Hashes tokens.
+/// Users can deposit ETH during PreRedemption stage, redeem their eligible Hashes tokens
+/// during Redemption stage, and claim remaining redemptions during PostRedemption stage.
 contract Redemption is IRedemption, Ownable, ReentrancyGuard {
-    Hashes public constant HASHES = Hashes(0xD07e72b00431af84AD438CA995Fd9a7F0207542d);
+    /// @inheritdoc IRedemption
+    Hashes public constant override HASHES = Hashes(0xD07e72b00431af84AD438CA995Fd9a7F0207542d);
 
-    uint256 public constant MIN_REDEMPTION_TIME = 180 days;
+    /// @inheritdoc IRedemption
+    uint256 public constant override MIN_REDEMPTION_TIME = 180 days;
 
-    uint256 public constant INITIAL_ELIGIBLE_HASHES_TOTAL = 520;
+    /// @inheritdoc IRedemption
+    uint256 public constant override INITIAL_ELIGIBLE_HASHES_TOTAL = 520;
 
-    Stages public stage;
+    /// @inheritdoc IRedemption
+    Stages public override stage;
 
-    uint256 public redemptionSetTime;
+    /// @inheritdoc IRedemption
+    uint256 public override redemptionSetTime;
 
-    uint256 public redemptionPerHash;
+    /// @inheritdoc IRedemption
+    uint256 public override redemptionPerHash;
 
-    uint256 public totalNumberRedeemed;
+    /// @inheritdoc IRedemption
+    uint256 public override totalNumberRedeemed;
 
-    mapping(address => uint256) public amountRedeemed;
+    /// @inheritdoc IRedemption
+    mapping(address => uint256) public override amountRedeemed;
 
-    mapping(uint256 => bool) public excludedHashIDs;
+    /// @inheritdoc IRedemption
+    mapping(uint256 => bool) public override excludedHashIDs;
 
+    /// @notice Constructor initializes the redemption contract with excluded token IDs and sets the owner
+    /// @param _excludedIds Array of token IDs that are excluded from redemption
+    /// @param _owner Address that will be set as the contract owner
     constructor(uint256[] memory _excludedIds, address _owner) {
         _transferOwnership(_owner);
         stage = Stages.PreRedemption;
@@ -37,20 +54,26 @@ contract Redemption is IRedemption, Ownable, ReentrancyGuard {
         emit StageSet(stage);
     }
 
+    /// @notice Receive function for accepting ETH deposits
     receive() external payable {
         _deposit();
     }
 
-    function deposit() external payable {
+    /// @inheritdoc IRedemption
+    function deposit() external payable override {
         _deposit();
     }
 
+    /// @notice Internal function to handle ETH deposits
+    /// @dev Reverts if called during PostRedemption stage and emits Deposit event
+    /// @custom:throws WrongStage if called during PostRedemption stage
     function _deposit() internal nonReentrant {
         if (stage == Stages.PostRedemption) revert WrongStage();
         emit Deposit(msg.sender, msg.value);
     }
 
-    function redeem() external nonReentrant {
+    /// @inheritdoc IRedemption
+    function redeem() external override nonReentrant {
         if (stage == Stages.PreRedemption) {
             revert WrongStage();
         } else if (stage == Stages.Redemption) {
@@ -78,7 +101,8 @@ contract Redemption is IRedemption, Ownable, ReentrancyGuard {
         }
     }
 
-    function setRedemptionStage() external onlyOwner nonReentrant {
+    /// @inheritdoc IRedemption
+    function setRedemptionStage() external override onlyOwner nonReentrant {
         if (stage != Stages.PreRedemption) revert WrongStage();
         stage = Stages.Redemption;
         redemptionSetTime = block.timestamp;
@@ -86,7 +110,8 @@ contract Redemption is IRedemption, Ownable, ReentrancyGuard {
         emit StageSet(stage);
     }
 
-    function setPostRedemptionStage() external onlyOwner nonReentrant {
+    /// @inheritdoc IRedemption
+    function setPostRedemptionStage() external override onlyOwner nonReentrant {
         if (stage != Stages.Redemption) revert WrongStage();
         if (block.timestamp < redemptionSetTime + MIN_REDEMPTION_TIME) revert MinRedemptionTime();
         stage = Stages.PostRedemption;
@@ -94,11 +119,13 @@ contract Redemption is IRedemption, Ownable, ReentrancyGuard {
         emit StageSet(stage);
     }
 
-    function recoverERC20(IERC20 _token) external onlyOwner nonReentrant {
+    /// @inheritdoc IRedemption
+    function recoverERC20(IERC20 _token) external override onlyOwner nonReentrant {
         _token.transfer(msg.sender, _token.balanceOf(msg.sender));
     }
 
-    function isHashEligibleForRedemption(uint256 _tokenId) public view returns (bool) {
+    /// @inheritdoc IRedemption
+    function isHashEligibleForRedemption(uint256 _tokenId) public view override returns (bool) {
         if (_tokenId >= 1000) return false;
         if (HASHES.deactivated(_tokenId)) return false;
         if (excludedHashIDs[_tokenId]) return false;
