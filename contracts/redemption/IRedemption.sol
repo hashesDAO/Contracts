@@ -72,7 +72,7 @@ interface IRedemption {
     function setPostRedemptionStage() external;
 
     /// @notice Allows owner to recover ERC20 tokens sent to the contract
-    /// @dev Transfers all balance of the specified token to the owner
+    /// @dev Transfers all tokens of the specified token to the owner
     /// @param _token The ERC20 token contract to recover
     /// @custom:throws OwnableUnauthorizedAccount if called by non-owner
     function recoverERC20(IERC20 _token) external;

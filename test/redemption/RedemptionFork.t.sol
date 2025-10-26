@@ -164,7 +164,7 @@ contract RedemptionForkTest is Test, DeployRedemption {
         redemption.setRedemptionStage();
     }
 
-    function testSetPostRedemptionStageFailureNoRedemptions() public prank(redemptionMultisig) {
+    function testSetPostRedemptionStageNoRedemptions() public prank(redemptionMultisig) {
         redemption.setRedemptionStage();
         vm.expectRevert();
         redemption.setPostRedemptionStage();
@@ -280,7 +280,7 @@ contract RedemptionForkTest is Test, DeployRedemption {
         redemption.setRedemptionStage();
 
         // Revert at initial redeem
-        vm.expectRevert();
+        vm.expectRevert(IRedemption.TransferFailed.selector);
         vm.prank(reverter);
         redemption.redeem();
 
@@ -292,7 +292,7 @@ contract RedemptionForkTest is Test, DeployRedemption {
         redemption.setPostRedemptionStage();
 
         // Revert at final redeem
-        vm.expectRevert();
+        vm.expectRevert(IRedemption.TransferFailed.selector);
         vm.prank(reverter);
         redemption.redeem();
     }
