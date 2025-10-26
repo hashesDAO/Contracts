@@ -8,7 +8,7 @@ env:
 
 jobs:
   check:
-    name: Foundry project
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -21,13 +21,10 @@ jobs:
           version: nightly
       
       - name: Install Forge Dependencies
-        run: forge install
-
-      - name: Run Forge build
         run: |
+          forge install
           forge --version
-          forge build --sizes
-        id: build
+        id: install
 
       - name: Run Forge tests
         run: |
