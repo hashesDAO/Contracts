@@ -121,7 +121,7 @@ contract Redemption is IRedemption, Ownable, ReentrancyGuard {
 
     /// @inheritdoc IRedemption
     function recoverERC20(IERC20 _token) external override onlyOwner nonReentrant {
-        _token.transfer(msg.sender, _token.balanceOf(msg.sender));
+        _token.transfer(msg.sender, _token.balanceOf(address(this)));
     }
 
     /// @inheritdoc IRedemption

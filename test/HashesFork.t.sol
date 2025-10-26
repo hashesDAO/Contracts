@@ -61,7 +61,7 @@ contract HashesFork is Test {
         assertGt(hashes.nonce(), 1e3);
     }
 
-    function testWithdrawWETHFromDAO() public {
+    function testWithdrawETHFromDAO() public {
         vm.startPrank(hashesDeployer);
 
         uint256 ethAmount = 10e18;
